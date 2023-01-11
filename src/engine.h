@@ -22,7 +22,7 @@ class Engine
     void init_swapchain();
 
   public:
-   Engine();
+    Engine();
     void init(int width, int height);
     void cleanup();
     void draw();

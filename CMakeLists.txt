@@ -1,11 +1,17 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.7)
 project(vulkan-human VERSION 0.1.0)
 
-
-add_executable(vulkan-human src/main.cpp)
+enable_testing()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
-add_subdirectory(tests)
+
+
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+add_subdirectory(src)
+add_subdirectory(test)
+add_subdirectory(thirdparty/vk-bootstrap)
+

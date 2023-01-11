@@ -16,6 +16,7 @@ target_link_libraries(main
     $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
     $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
     vk-bootstrap::vk-bootstrap
+    ${Vulkan_LIBRARY}
 )
 
 

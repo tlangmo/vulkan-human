@@ -85,10 +85,8 @@ void Engine::init(uint32_t width, uint32_t height)
     glfw_extensions = glfwGetRequiredInstanceExtensions(&ext_count);
 
     vkb::InstanceBuilder builder;
-    builder.set_app_name("Vulkan Human")
-        .request_validation_layers(true)
-        .use_default_debug_messenger()
-        .require_api_version(1, 1, 0);
+    builder.set_app_name("Vulkan Human").request_validation_layers(true).use_default_debug_messenger();
+    // .require_api_version(1, 0, 0);
     for (int i = 0; i < ext_count; i++)
     {
         builder.enable_extension(glfw_extensions[i]);
@@ -105,7 +103,7 @@ void Engine::init(uint32_t width, uint32_t height)
 
     // use vkbootstrap to select a GPU.
     vkb::PhysicalDeviceSelector selector{vkb_instance};
-    vkb::PhysicalDevice vkb_physical_device = selector.set_minimum_version(1, 2)
+    vkb::PhysicalDevice vkb_physical_device = selector
                                                   .set_surface(m_surface)
                                                   //   .prefer_gpu_device_type()
                                                   //   .require_present(true)
@@ -323,8 +321,9 @@ Present the swap chain image*/
     }
 
     VkClearValue clearValue;
-    float flash = abs(sin(frame_number / 120.f));
-    clearValue.color = {{0.0f, 0.0f, flash, 1.0f}};
+    float flash = std::abs(sin((double)frame_number / 30.f));
+    std::cout << flash << std::endl;
+    clearValue.color = {{0.0f, 1.0f, flash, 1.0f}};
 
     // // //start the main renderpass.
     // // //We will use the clear color from above, and the framebuffer of the index the swapchain gave us

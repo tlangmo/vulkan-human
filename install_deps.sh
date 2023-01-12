@@ -6,5 +6,5 @@ export VULKAN_SDK="/usr/"
 
 $VCPKG_BIN install --recurse \
     catch2 \
-    sdl2[vulkan] \
-    glm
+    glm \
+    glfw3

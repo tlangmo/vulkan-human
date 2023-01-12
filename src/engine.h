@@ -5,7 +5,7 @@
 class Engine
 {
   private:
-    struct SDL_Window* m_window{nullptr};
+    struct GLFWwindow* m_window{nullptr};
 
     VkInstance m_instance;                      // Vulkan library handle
     VkDebugUtilsMessengerEXT m_debug_messenger; // Vulkan debug output handle

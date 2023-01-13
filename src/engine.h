@@ -33,12 +33,17 @@ class Engine
     VkSemaphore m_semaphore_render;
     VkFence m_fence_render;
 
+    VkPipeline m_pipeline;
+    VkPipelineLayout m_pipeline_layout;
+
   private:
     void init_swapchain(vkb::Device dev);
     void init_commands();
     void init_default_renderpass();
     void init_framebuffers();
     void init_barriers();
+    void load_shader_module(const char* file_path, VkShaderModule* out_shader_module);
+    void init_pipelines();
 
   public:
     Engine();

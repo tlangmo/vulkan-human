@@ -7,7 +7,7 @@
 int main(int argc, char* argv[])
 {
     Engine engine;
-    engine.init(512, 512);
+    engine.init(800, 600);
     engine.run();
     engine.cleanup();
     return 0;

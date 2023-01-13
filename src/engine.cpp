@@ -1,13 +1,15 @@
 
 #include "engine.h"
+#include "pipelines/basic_pipeline.h"
 #define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include "VkBootstrap.h"
+#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <assert.h>
 #include <cmath>
+#include <fstream>
 #include <iostream>
+#include <vector>
 
 std::string errorString(VkResult errorCode)
 {
@@ -127,6 +129,7 @@ void Engine::init(uint32_t width, uint32_t height)
     init_default_renderpass();
     init_framebuffers();
     init_barriers();
+    init_pipelines();
 }
 
 void Engine::init_swapchain(vkb::Device dev)
@@ -187,14 +190,6 @@ void Engine::init_default_renderpass()
     color_attachment_ref.attachment = 0;
     color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    VkSubpassDependency dependency = {};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
@@ -209,8 +204,6 @@ void Engine::init_default_renderpass()
     // connect the subpass to the info
     render_pass_info.subpassCount = 1;
     render_pass_info.pSubpasses = &subpass;
-    // render_pass_info.dependencyCount = 1;
-    // render_pass_info.pDependencies = &dependency;
 
     vkCreateRenderPass(m_device, &render_pass_info, nullptr, &m_render_pass);
 }
@@ -292,10 +285,10 @@ void Engine::cleanup()
 void Engine::draw(size_t frame_number)
 {
     /*Wait for the previous frame to finish
-Acquire an image from the swap chain
-Record a command buffer which draws the scene onto that image
-Submit the recorded command buffer
-Present the swap chain image*/
+        Acquire an image from the swap chain
+        Record a command buffer which draws the scene onto that image
+        Submit the recorded command buffer
+        Present the swap chain image*/
     const uint64_t kTimeout = 1000000000;
     uint32_t swap_chain_index = 20;
     vkWaitForFences(m_device, 1, &m_fence_render, VK_TRUE, UINT64_MAX);
@@ -322,7 +315,6 @@ Present the swap chain image*/
 
     VkClearValue clearValue;
     float flash = std::abs(sin((double)frame_number / 30.f));
-    std::cout << flash << std::endl;
     clearValue.color = {{0.0f, 1.0f, flash, 1.0f}};
 
     // // //start the main renderpass.
@@ -342,6 +334,9 @@ Present the swap chain image*/
     rp_info.pClearValues = &clearValue;
 
     vkCmdBeginRenderPass(m_main_command_buffer, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBindPipeline(m_main_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    vkCmdDraw(m_main_command_buffer, 3, 1, 0, 0);
+
     vkCmdEndRenderPass(m_main_command_buffer);
     // // //finalize the command buffer (we can no longer add commands, but it can now be executed)
     VK_CHECK_RESULT(vkEndCommandBuffer(m_main_command_buffer));
@@ -385,9 +380,105 @@ Present the swap chain image*/
     presentInfo.waitSemaphoreCount = 1;
 
     VkResult res = vkQueuePresentKHR(m_present_queue, &presentInfo);
-    std::cout << "swap_chain_index:" << swap_chain_index << std::endl;
+    // std::cout << "swap_chain_index:" << swap_chain_index << std::endl;
 }
 
+void Engine::load_shader_module(const char* filePath, VkShaderModule* out_shader_module)
+{
+    std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+    if (!file.is_open())
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "file not found: %s", filePath);
+        throw std::runtime_error(msg);
+    }
+    size_t file_size = (size_t)file.tellg();
+    // spirv expects the buffer to be on uint32 aligned, so make sure to reserve an int vector big enough for the entire
+    // file
+    std::vector<uint32_t> buffer(file_size / sizeof(uint32_t));
+    // put file cursor at beginning
+    file.seekg(0);
+
+    // load the entire file into the buffer
+    file.read((char*)buffer.data(), file_size);
+    file.close();
+
+    VkShaderModuleCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.codeSize = buffer.size() * sizeof(u_int32_t);
+    create_info.pCode = buffer.data();
+    VkShaderModule shader_module;
+    if (vkCreateShaderModule(m_device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
+    {
+        throw std::runtime_error("invalid shader file");
+    }
+    *out_shader_module = shader_module;
+}
+void Engine::init_pipelines()
+{
+    VkShaderModule triangle_frag;
+    VkShaderModule triangle_vert;
+    load_shader_module("shaders/triangle.vert.spv", &triangle_vert);
+    load_shader_module("shaders/triangle.frag.spv", &triangle_frag);
+
+    PipelineBuilder builder;
+    builder.add_shader_stage(
+        VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                                        .pNext = nullptr,
+                                        .flags = {},
+                                        .stage = VK_SHADER_STAGE_VERTEX_BIT,
+                                        .module = triangle_vert,
+                                        .pName = "main"});
+    builder.add_shader_stage(
+        VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                                        .pNext = nullptr,
+                                        .flags = {},
+                                        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+                                        .module = triangle_frag,
+                                        .pName = "main"});
+    builder.add_vertex_input_state(
+        VkPipelineVertexInputStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+                                             .flags = VkPipelineVertexInputStateCreateFlags{},
+                                             .vertexBindingDescriptionCount = 0,
+                                             .vertexAttributeDescriptionCount = 0});
+    builder.add_input_assembly_state(
+        VkPipelineInputAssemblyStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+                                               .topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST});
+
+    builder.add_rasterization_state(
+        VkPipelineRasterizationStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+                                               .depthClampEnable = VK_FALSE,
+                                               .rasterizerDiscardEnable = VK_FALSE,
+                                               .polygonMode = VK_POLYGON_MODE_FILL,
+                                               .cullMode = VK_CULL_MODE_NONE,
+                                               .frontFace = VK_FRONT_FACE_CLOCKWISE,
+                                               .depthBiasEnable = VK_FALSE,
+                                               .depthBiasConstantFactor = 0.0f,
+                                               .depthBiasClamp = 0.0f,
+                                               .depthBiasSlopeFactor = 0.0f,
+                                               .lineWidth = 1.0f});
+    builder.add_viewport({.x = 0,
+                          .y = 0,
+                          .width = (float)m_window_size.width,
+                          .height = (float)m_window_size.height,
+                          .minDepth = 0,
+                          .maxDepth = 1});
+    builder.no_msaa();
+    builder.no_color_blend();
+
+    VkPipelineLayoutCreateInfo pipeline_layout_info{};
+    pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_info.pNext = nullptr;
+    // empty defaults
+    pipeline_layout_info.flags = 0;
+    pipeline_layout_info.setLayoutCount = 0;
+    pipeline_layout_info.pSetLayouts = nullptr;
+    pipeline_layout_info.pushConstantRangeCount = 0;
+    pipeline_layout_info.pPushConstantRanges = nullptr;
+    VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipeline_layout_info, nullptr, &m_pipeline_layout));
+
+    m_pipeline = builder.build(m_device, m_render_pass, m_pipeline_layout);
+}
 void Engine::run()
 {
     size_t frame_number = 0;

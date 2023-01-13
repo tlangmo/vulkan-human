@@ -5,10 +5,10 @@ error:
 	@echo "Please choose one of the following target: create, validate_fmt, fmt"
 
 validate_fmt:
-	find src -iname *.h -o -iname *.cpp | xargs clang-format -i -verbose --style=file --dry-run
+	find src  -regex '.*\.\(h\|cpp\|vert\|frag\|comp\)'  | xargs clang-format -i --verbose  --style=file --dry-run
 
 fmt:
-	find src -iname *.h -o -iname *.cpp | xargs clang-format -i -verbose --style=file
+	find src -regex '.*\.\(h\|cpp\|vert\|frag\|comp\)'  | xargs clang-format -i  --verbose --style=file
 
 create:
 	@echo "Creating project Makefiles using cmake"

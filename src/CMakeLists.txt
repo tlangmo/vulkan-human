@@ -1,4 +1,4 @@
-include_directories(${CURRENT_SOURCE_DIR} )
+include_directories(${CURRENT_SOURCE_DIR} ${CURRENT_SOURCE_DIR}/pipelines )
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -9,6 +9,7 @@ message(${Vulkan_FOUND})
 
 add_executable(main main.cpp
                     engine.cpp
+                    pipelines/basic_pipeline.cpp
 )
 
 
@@ -20,6 +21,6 @@ target_link_libraries(main
     ${Vulkan_LIBRARY}
     glfw
 )
+add_subdirectory(shaders)
 
 
-find_package(Catch2 CONFIG REQUIRED)

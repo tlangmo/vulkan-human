@@ -1,8 +1,13 @@
 #pragma once
 
 #include "VkBootstrap.h"
+#include "mesh.h"
 #include <vector>
 #include <vulkan/vulkan.h>
+
+// forward decl
+VK_DEFINE_HANDLE(VmaAllocator)
+
 class Engine
 {
   private:
@@ -38,6 +43,9 @@ class Engine
     VkShaderModule m_triangle_frag;
     VkShaderModule m_triangle_vert;
 
+    VmaAllocator m_allocator;
+    Mesh m_mesh;
+
   private:
     void init_swapchain(vkb::Device dev);
     void init_commands();
@@ -46,6 +54,7 @@ class Engine
     void init_barriers();
     void load_shader_module(const char* file_path, VkShaderModule* out_shader_module);
     void init_pipelines();
+    void init_scene_data();
 
   public:
     Engine();

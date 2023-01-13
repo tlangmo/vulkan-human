@@ -9,6 +9,7 @@ message(${Vulkan_FOUND})
 
 add_executable(main main.cpp
                     engine.cpp
+                    mesh.cpp
                     pipelines/basic_pipeline.cpp
 )
 

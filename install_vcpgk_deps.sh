@@ -7,4 +7,5 @@ export VULKAN_SDK="/usr/"
 $VCPKG_BIN install --recurse \
     catch2 \
     glm \
-    glfw3
+    glfw3 \
+    vulkan-memory-allocator

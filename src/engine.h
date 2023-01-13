@@ -35,6 +35,8 @@ class Engine
 
     VkPipeline m_pipeline;
     VkPipelineLayout m_pipeline_layout;
+    VkShaderModule m_triangle_frag;
+    VkShaderModule m_triangle_vert;
 
   private:
     void init_swapchain(vkb::Device dev);

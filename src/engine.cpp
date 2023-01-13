@@ -245,7 +245,12 @@ void Engine::init_barriers()
 
 void Engine::cleanup()
 {
+    vkDeviceWaitIdle(m_device);
     vkWaitForFences(m_device, 1, &m_fence_render, VK_TRUE, UINT64_MAX);
+    vkDestroyPipeline(m_device, m_pipeline, nullptr);
+    vkDestroyPipelineLayout(m_device, m_pipeline_layout, nullptr);
+    vkDestroyShaderModule(m_device, m_triangle_frag, nullptr);
+    vkDestroyShaderModule(m_device, m_triangle_vert, nullptr);
     if (m_fence_render)
     {
         vkDestroyFence(m_device, m_fence_render, nullptr);
@@ -416,10 +421,9 @@ void Engine::load_shader_module(const char* filePath, VkShaderModule* out_shader
 }
 void Engine::init_pipelines()
 {
-    VkShaderModule triangle_frag;
-    VkShaderModule triangle_vert;
-    load_shader_module("shaders/triangle.vert.spv", &triangle_vert);
-    load_shader_module("shaders/triangle.frag.spv", &triangle_frag);
+
+    load_shader_module("shaders/triangle.vert.spv", &m_triangle_vert);
+    load_shader_module("shaders/triangle.frag.spv", &m_triangle_frag);
 
     PipelineBuilder builder;
     builder.add_shader_stage(
@@ -427,14 +431,14 @@ void Engine::init_pipelines()
                                         .pNext = nullptr,
                                         .flags = {},
                                         .stage = VK_SHADER_STAGE_VERTEX_BIT,
-                                        .module = triangle_vert,
+                                        .module = m_triangle_vert,
                                         .pName = "main"});
     builder.add_shader_stage(
         VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                                         .pNext = nullptr,
                                         .flags = {},
                                         .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-                                        .module = triangle_frag,
+                                        .module = m_triangle_frag,
                                         .pName = "main"});
     builder.add_vertex_input_state(
         VkPipelineVertexInputStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

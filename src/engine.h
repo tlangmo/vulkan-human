@@ -2,6 +2,8 @@
 
 #include "VkBootstrap.h"
 #include "mesh.h"
+#include "swapchain.h"
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -19,10 +21,7 @@ class Engine
     VkDevice m_device;      // Vulkan device for commands
     VkSurfaceKHR m_surface; // Vulkan window surface
 
-    VkSwapchainKHR m_swapchain;
-    VkFormat m_swapchain_format;
-    std::vector<VkImage> m_swapchain_images;
-    std::vector<VkImageView> m_swapchain_image_views;
+    std::unique_ptr<engine::SwapChain> m_swapchain;
 
     std::vector<VkFramebuffer> m_frame_buffers;
 
@@ -47,7 +46,7 @@ class Engine
     Mesh m_mesh;
 
   private:
-    void init_swapchain(vkb::Device dev);
+    //  void init_swapchain(vkb::Device dev);
     void init_commands();
     void init_default_renderpass();
     void init_framebuffers();

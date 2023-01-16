@@ -45,7 +45,6 @@ void Engine::init(uint32_t width, uint32_t height)
 
     vkb::InstanceBuilder builder;
     builder.set_app_name("Vulkan Human").request_validation_layers(true).use_default_debug_messenger();
-    // .require_api_version(1, 0, 0);
     for (int i = 0; i < ext_count; i++)
     {
         builder.enable_extension(glfw_extensions[i]);
@@ -87,7 +86,8 @@ void Engine::init(uint32_t width, uint32_t height)
     allocatorInfo.instance = m_instance;
     vmaCreateAllocator(&allocatorInfo, &m_allocator);
 
-    init_swapchain(vkb_device);
+    m_swapchain = std::make_unique<engine::SimpleSwapchain>(m_physical_device, m_device, m_surface);
+
     init_commands();
     init_default_renderpass();
     init_framebuffers();
@@ -95,25 +95,25 @@ void Engine::init(uint32_t width, uint32_t height)
     init_pipelines();
 }
 
-void Engine::init_swapchain(vkb::Device dev)
-{
-    // vkb::SwapchainBuilder vkb_swapchain_builder(m_physical_device, m_device, m_surface,0,0);
-    vkb::SwapchainBuilder vkb_swapchain_builder(dev);
+// void Engine::init_swapchain(vkb::Device dev)
+// {
+//     // vkb::SwapchainBuilder vkb_swapchain_builder(m_physical_device, m_device, m_surface,0,0);
+//     vkb::SwapchainBuilder vkb_swapchain_builder(dev);
 
-    vkb::Swapchain vkb_swapchain = vkb_swapchain_builder
-                                       .use_default_format_selection()
-                                       // use vsync present mode
-                                       //    .set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
-                                       //    .set_desired_extent(m_window_size.width, m_window_size.height)
-                                       //    .set_desired_min_image_count(1)
-                                       .build()
-                                       .value();
-    // https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
-    m_swapchain = vkb_swapchain.swapchain;
-    m_swapchain_images = vkb_swapchain.get_images().value();
-    m_swapchain_image_views = vkb_swapchain.get_image_views().value();
-    m_swapchain_format = vkb_swapchain.image_format;
-}
+//     vkb::Swapchain vkb_swapchain = vkb_swapchain_builder
+//                                        .use_default_format_selection()
+//                                        // use vsync present mode
+//                                        //    .set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
+//                                        //    .set_desired_extent(m_window_size.width, m_window_size.height)
+//                                        //    .set_desired_min_image_count(1)
+//                                        .build()
+//                                        .value();
+//     // https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
+//     m_swapchain = vkb_swapchain.swapchain;
+//     m_swapchain_images = vkb_swapchain.get_images().value();
+//     m_swapchain_image_views = vkb_swapchain.get_image_views().value();
+//     m_swapchain_format = vkb_swapchain.image_format;
+// }
 
 void Engine::init_commands()
 {
@@ -139,7 +139,7 @@ void Engine::init_default_renderpass()
 {
     // a nice explanation: https://developer.samsung.com/galaxy-gamedev/resources/articles/renderpasses.html
     VkAttachmentDescription color_attachment = {};
-    color_attachment.format = m_swapchain_format;
+    color_attachment.format = m_swapchain->get_swapchain_format();
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
     color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -185,8 +185,8 @@ void Engine::init_framebuffers()
 
     m_frame_buffers.clear();
 
-    std::transform(m_swapchain_image_views.begin(), m_swapchain_image_views.end(), std::back_inserter(m_frame_buffers),
-                   [&](const VkImageView img) -> VkFramebuffer {
+    std::transform(m_swapchain->get_swapchain_image_views().begin(), m_swapchain->get_swapchain_image_views().end(),
+                   std::back_inserter(m_frame_buffers), [&](const VkImageView img) -> VkFramebuffer {
                        fb_info.pAttachments = &img;
                        VkFramebuffer fb;
                        VK_CHECK_RESULT(vkCreateFramebuffer(m_device, &fb_info, nullptr, &fb));
@@ -232,13 +232,10 @@ void Engine::cleanup()
     {
         vkDestroyCommandPool(m_device, m_command_pool, nullptr);
     }
-    if (m_swapchain)
+    m_swapchain.reset();
+    // if (m_swapchain)
     {
-        vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
-        for (auto sc : m_swapchain_image_views)
-        {
-            vkDestroyImageView(m_device, sc, nullptr);
-        }
+        // m_swapchain->destroy();
         for (auto fb : m_frame_buffers)
         {
             vkDestroyFramebuffer(m_device, fb, nullptr);
@@ -260,8 +257,8 @@ void Engine::draw(size_t frame_number)
     const uint64_t kTimeout = 1000000000;
     uint32_t swap_chain_index = 20;
     vkWaitForFences(m_device, 1, &m_fence_render, VK_TRUE, UINT64_MAX);
-    VK_CHECK_RESULT(
-        vkAcquireNextImageKHR(m_device, m_swapchain, kTimeout, m_semaphore_present, nullptr, &swap_chain_index));
+    VK_CHECK_RESULT(vkAcquireNextImageKHR(m_device, m_swapchain->get_swapchain_khr(), kTimeout, m_semaphore_present,
+                                          nullptr, &swap_chain_index));
 
     // // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkFence.html
     // // A fence can be signaled as part of the execution of a queue submission command.
@@ -339,7 +336,7 @@ void Engine::draw(size_t frame_number)
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pNext = NULL;
-    VkSwapchainKHR swapChains[] = {m_swapchain};
+    VkSwapchainKHR swapChains[] = {m_swapchain->get_swapchain_khr()};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &swap_chain_index;

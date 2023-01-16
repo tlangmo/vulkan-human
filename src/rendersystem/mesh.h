@@ -25,18 +25,16 @@ struct VertexInputDescription
     VkPipelineVertexInputStateCreateFlags flags = 0;
 };
 
-typedef std::vector<VertexAttributes> VertexData;
 class Mesh
 {
   public:
-    VertexData& vertices();
-    const VertexData& vertices() const;
-    static VertexInputDescription get_vertex_input_description();
+    std::vector<VertexAttributes>& vertices();
+    const std::vector<VertexAttributes>& vertices() const;
+    static VertexInputDescription& get_vertex_input_description();
     void create(VmaAllocator vma_allocator);
-    void destroy();
+    void destroy(VmaAllocator vma_allocator);
 
-  private:
-    VertexData m_vertex_attributes;
+    std::vector<VertexAttributes> m_vertex_attributes;
     VkBuffer m_buffer;
     VmaAllocation m_allocation;
 };

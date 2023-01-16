@@ -1,12 +1,12 @@
-include_directories(${CURRENT_SOURCE_DIR} engine )
+include_directories(${CURRENT_SOURCE_DIR} rendersystem components)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 
-    
-add_subdirectory(engine)
+add_subdirectory(components)   
+add_subdirectory(rendersystem)
 add_subdirectory(shaders)
 
 
@@ -19,5 +19,5 @@ target_link_libraries(main
     vk-bootstrap::vk-bootstrap
     ${Vulkan_LIBRARY}
     glfw
-    $<TARGET_OBJECTS:engine>
+    $<TARGET_OBJECTS:rendersystem>
 )

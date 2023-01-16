@@ -100,6 +100,7 @@ template <> void destroy_data_object(CoreData& core_data)
     vkDestroySemaphore(core_data.device, core_data.semaphore_present, nullptr);
     vkDestroySemaphore(core_data.device, core_data.semaphore_render, nullptr);
     vkDestroyCommandPool(core_data.device, core_data.cmd_pool, nullptr);
+    vmaDestroyAllocator(core_data.allocator);
     vkDestroyDevice(core_data.device, nullptr);
     vkDestroySurfaceKHR(core_data.instance, core_data.surface, nullptr);
     vkb::destroy_debug_utils_messenger(core_data.instance, core_data.debug_messenger);

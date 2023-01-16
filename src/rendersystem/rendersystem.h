@@ -2,15 +2,28 @@
 
 #include "VkBootstrap.h"
 #include "core.h"
+#include "entity.h"
 #include "mesh.h"
 #include "pass.h"
 #include "swapchain.h"
 #include <memory>
+#include <mesh.h>
 #include <vector>
 #include <vulkan/vulkan.h>
-
-class Engine
+namespace engine
 {
+class RenderSystem
+{
+  public:
+    RenderSystem();
+    void create(uint32_t width, uint32_t height);
+    void destroy();
+    void process(const std::vector<Entity>& entities);
+
+  private:
+    void create_pipeline();
+    void draw(size_t frame_number);
+
   private:
     engine::CoreData m_core;
     engine::SwapChainData m_swapchain;
@@ -21,13 +34,6 @@ class Engine
     VkShaderModule m_triangle_frag;
     VkShaderModule m_triangle_vert;
 
-  private:
-    void init_pipelines();
-
-  public:
-    Engine();
-    void init(uint32_t width, uint32_t height);
-    void cleanup();
-    void draw(size_t frame_number);
-    void run();
+    std::unordered_map<std::size_t, std::unique_ptr<Mesh>> m_meshes;
 };
+} // namespace engine

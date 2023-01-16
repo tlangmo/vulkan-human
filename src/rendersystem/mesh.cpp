@@ -6,11 +6,11 @@
 namespace engine
 {
 
-VertexData& Mesh::vertices()
+std::vector<VertexAttributes>& Mesh::vertices()
 {
     return m_vertex_attributes;
 }
-const VertexData& Mesh::vertices() const
+const std::vector<VertexAttributes>& Mesh::vertices() const
 {
     return m_vertex_attributes;
 }
@@ -43,11 +43,15 @@ void Mesh::create(VmaAllocator vma_allocator)
     vmaUnmapMemory(vma_allocator, m_allocation);
 }
 
-VertexInputDescription Mesh::get_vertex_input_description()
+void Mesh::destroy(VmaAllocator vma_allocator)
 {
-    VertexInputDescription description;
+    vmaDestroyBuffer(vma_allocator, m_buffer, m_allocation);
+}
 
+static VertexInputDescription get_input_desc()
+{
     // we will have just 1 vertex buffer binding, with a per-vertex rate
+    VertexInputDescription description;
     VkVertexInputBindingDescription mainBinding = {};
     mainBinding.binding = 0;
     mainBinding.stride = sizeof(VertexAttributes);
@@ -79,6 +83,11 @@ VertexInputDescription Mesh::get_vertex_input_description()
     description.attributes.push_back(positionAttribute);
     description.attributes.push_back(normalAttribute);
     description.attributes.push_back(colorAttribute);
+    return description;
+}
+VertexInputDescription& Mesh::get_vertex_input_description()
+{
+    static VertexInputDescription description = get_input_desc();
     return description;
 }
 } // namespace engine

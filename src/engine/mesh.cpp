@@ -3,6 +3,9 @@
 #include <cstring>
 #include <vk_mem_alloc.h>
 
+namespace engine
+{
+
 VertexData& Mesh::vertices()
 {
     return m_vertex_attributes;
@@ -12,7 +15,7 @@ const VertexData& Mesh::vertices() const
     return m_vertex_attributes;
 }
 
-void Mesh::upload(VmaAllocator vma_allocator)
+void Mesh::create(VmaAllocator vma_allocator)
 {
     assert(m_buffer == nullptr);
     if (m_vertex_attributes.empty())
@@ -78,3 +81,4 @@ VertexInputDescription Mesh::get_vertex_input_description()
     description.attributes.push_back(colorAttribute);
     return description;
 }
+} // namespace engine

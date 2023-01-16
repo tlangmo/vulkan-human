@@ -2,7 +2,8 @@
 
 #include <vector>
 #include <vulkan/vulkan.h>
-
+namespace engine
+{
 class PipelineBuilder
 {
 
@@ -28,3 +29,6 @@ class PipelineBuilder
     VkRect2D m_scissor;
     VkPipelineLayout m_pipeline_layout;
 };
+
+void load_shader_module(VkDevice device, const char* file_path, VkShaderModule* out_shader_module);
+} // namespace engine

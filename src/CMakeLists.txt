@@ -1,19 +1,16 @@
-include_directories(${CURRENT_SOURCE_DIR} ${CURRENT_SOURCE_DIR}/pipelines )
+include_directories(${CURRENT_SOURCE_DIR} engine )
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
-message(${Vulkan_FOUND})
+
     
+add_subdirectory(engine)
+add_subdirectory(shaders)
 
-add_executable(main main.cpp
-                    engine.cpp
-                    swapchain.cpp
-                    mesh.cpp
-                    pipelines/basic_pipeline.cpp
-)
 
+add_executable(main main.cpp)
 
 target_link_libraries(main
     PRIVATE
@@ -22,7 +19,5 @@ target_link_libraries(main
     vk-bootstrap::vk-bootstrap
     ${Vulkan_LIBRARY}
     glfw
+    $<TARGET_OBJECTS:engine>
 )
-add_subdirectory(shaders)
-
-

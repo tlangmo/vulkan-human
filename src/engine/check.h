@@ -1,4 +1,5 @@
 #pragma once
+#include <assert.h>
 #include <iostream>
 #include <string>
 #include <vulkan/vulkan_core.h>

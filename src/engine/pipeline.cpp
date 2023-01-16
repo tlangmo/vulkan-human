@@ -1,5 +1,9 @@
-#include "basic_pipeline.h"
+#include "pipeline.h"
+#include <fstream>
 #include <iostream>
+
+namespace engine
+{
 
 PipelineBuilder& PipelineBuilder::add_shader_stage(const VkPipelineShaderStageCreateInfo& info)
 {
@@ -109,3 +113,36 @@ VkPipeline PipelineBuilder::build(VkDevice device, VkRenderPass pass, VkPipeline
         return newPipeline;
     }
 }
+
+void load_shader_module(VkDevice device, const char* filePath, VkShaderModule* out_shader_module)
+{
+    std::ifstream file(filePath, std::ios::ate | std::ios::binary);
+    if (!file.is_open())
+    {
+        char msg[128];
+        snprintf(msg, sizeof(msg), "file not found: %s", filePath);
+        throw std::runtime_error(msg);
+    }
+    size_t file_size = (size_t)file.tellg();
+    // spirv expects the buffer to be on uint32 aligned, so make sure to reserve an int vector big enough for the entire
+    // file
+    std::vector<uint32_t> buffer(file_size / sizeof(uint32_t));
+    // put file cursor at beginning
+    file.seekg(0);
+
+    // load the entire file into the buffer
+    file.read((char*)buffer.data(), file_size);
+    file.close();
+
+    VkShaderModuleCreateInfo create_info = {};
+    create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.codeSize = buffer.size() * sizeof(u_int32_t);
+    create_info.pCode = buffer.data();
+    VkShaderModule shader_module;
+    if (vkCreateShaderModule(device, &create_info, nullptr, &shader_module) != VK_SUCCESS)
+    {
+        throw std::runtime_error("invalid shader file");
+    }
+    *out_shader_module = shader_module;
+}
+} // namespace engine

@@ -21,4 +21,5 @@ target_link_libraries(main
     ${Vulkan_LIBRARY}
     glfw
     $<TARGET_OBJECTS:rendersystem>
+    $<TARGET_OBJECTS:components>
 )

@@ -8,6 +8,11 @@
 VK_DEFINE_HANDLE(VmaAllocation)
 VK_DEFINE_HANDLE(VmaAllocator)
 
+namespace tinygltf
+{
+class Model;
+}
+
 namespace rendersystem
 {
 
@@ -34,6 +39,7 @@ class Mesh
     Mesh() : m_vertex_attributes(), m_buffer(), m_allocation()
     {
     }
+    Mesh(const tinygltf::Model& model);
     Mesh(const Mesh& rhs) = delete;
     Mesh(const Mesh&& rhs) = delete;
     std::vector<VertexAttributes>& vertices();

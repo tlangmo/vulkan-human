@@ -95,7 +95,7 @@ void RenderSystem::create_pipeline()
                                                .rasterizerDiscardEnable = VK_FALSE,
                                                .polygonMode = VK_POLYGON_MODE_FILL,
                                                .cullMode = VK_CULL_MODE_NONE,
-                                               .frontFace = VK_FRONT_FACE_CLOCKWISE,
+                                               .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
                                                .depthBiasEnable = VK_FALSE,
                                                .depthBiasConstantFactor = 0.0f,
                                                .depthBiasClamp = 0.0f,
@@ -180,13 +180,20 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     VkDeviceSize offset = 0;
     for (const auto& ent : entities)
     {
-        auto viz = ent.get_component<VisualComponent>();
         auto coord = ent.get_component<CoordSysComponent>();
-        if (!viz)
+
+        std::size_t viz_com_hash = 0;
+        auto viz = ent.get_component<VisualComponent>();
+        auto viz_gltf = ent.get_component<GLTFComponent>();
+        if (!viz && !viz_gltf)
         {
             continue;
         }
-        std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
+        if (viz)
+            viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
+        if (viz_gltf)
+            viz_com_hash = std::hash<std::shared_ptr<GLTFComponent>>{}(viz_gltf);
+
         auto& render_mesh = m_meshes[viz_com_hash];
         MeshPushConstants constants;
         glm::vec3 cam_pos = {0.f, 0.f, -2.f};
@@ -204,7 +211,8 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
         // calculate final mesh matrix
         glm::mat4 mesh_matrix = projection * view * model;
         constants.render_matrix = mesh_matrix;
-
+        // constants.render_matrix =glm::mat4{1.0};
+        ;
         // upload the matrix to the GPU via push constants
         vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(MeshPushConstants), &constants);
@@ -259,33 +267,23 @@ void RenderSystem::process(const std::vector<Entity>& entities)
     {
         for (auto e : entities)
         {
-            auto viz = e.get_component<VisualComponent>();
-            if (viz == nullptr)
-            {
-                std::cout << "not a real one" << std::endl;
-            }
-
-            if (viz != nullptr)
+            if (auto viz = e.get_component<VisualComponent>(); viz != nullptr)
             {
                 std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
                 if (m_meshes.find(viz_com_hash) == m_meshes.end())
                 {
-                    auto render_mesh = std::make_unique<Mesh>();
-                    std::transform(viz->vertices().begin(), viz->vertices().end(),
-                                   std::back_inserter(render_mesh->vertices()),
-                                   [](ColoredVertex& v) -> VertexAttributes {
-                                       VertexAttributes va;
-                                       va.position[0] = v.position[0];
-                                       va.position[1] = v.position[1];
-                                       va.position[2] = v.position[2];
-
-                                       va.color[0] = v.color[0];
-                                       va.color[1] = v.color[1];
-                                       va.color[2] = v.color[2];
-                                       return va;
-                                   });
-                    render_mesh->create(m_core.allocator);
-                    m_meshes[viz_com_hash] = std::move(render_mesh);
+                    m_meshes[viz_com_hash] = create_mesh_from_vertex_data<ColoredVertex>(viz->vertices());
+                    m_meshes[viz_com_hash]->create(m_core.allocator);
+                }
+            }
+            if (auto viz = e.get_component<GLTFComponent>(); viz != nullptr)
+            {
+                std::size_t viz_com_hash = std::hash<std::shared_ptr<GLTFComponent>>{}(viz);
+                if (m_meshes.find(viz_com_hash) == m_meshes.end())
+                {
+                    m_meshes[viz_com_hash] = std::make_unique<Mesh>(viz->model());
+                    m_meshes[viz_com_hash]->create(m_core.allocator);
+                    std::cout << "size " << m_meshes[viz_com_hash]->vertices().size() << std::endl;
                 }
             }
         }

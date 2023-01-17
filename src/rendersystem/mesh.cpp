@@ -2,6 +2,10 @@
 #include "check.h"
 #include <cstring>
 #include <vk_mem_alloc.h>
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "tiny_gltf.h"
 
 namespace rendersystem
 {
@@ -85,4 +89,49 @@ VertexInputDescriptionData& Mesh::get_vertex_input_description()
     static VertexInputDescriptionData description = get_input_desc();
     return description;
 }
+
+Mesh::Mesh(const tinygltf::Model& model) : m_vertex_attributes(), m_buffer(), m_allocation()
+{
+    // extract the indicies for the first model;
+    for (const tinygltf::Mesh& m : model.meshes)
+    {
+        for (const tinygltf::Primitive& p : m.primitives)
+        {
+            VertexAttributes va;
+            {
+                auto& acc = model.accessors[p.attributes.at("POSITION")];
+                const tinygltf::BufferView& view = model.bufferViews[acc.bufferView];
+                const tinygltf::Buffer& buf = model.buffers[view.buffer];
+                const unsigned char* p_start = buf.data.data() + view.byteOffset + acc.byteOffset;
+                const unsigned char* p_cur = nullptr;
+                for (p_cur = p_start; p_cur < p_start + view.byteLength; p_cur += sizeof(float) * 3)
+                {
+                    glm::vec3 pos = *reinterpret_cast<const glm::vec3*>(p_cur);
+                    va.position = *reinterpret_cast<const glm::vec3*>(p_cur);
+                    m_vertex_attributes.push_back(va);
+                    // std::cout << "[" << va.position.x << "," << va.position.y<< "," << va.position.z << "]" <<
+                    // std::endl;
+                }
+            }
+            VertexAttributes* p_va = m_vertex_attributes.data();
+            {
+                auto& acc = model.accessors[p.attributes.at("NORMAL")];
+                const tinygltf::BufferView& view = model.bufferViews[acc.bufferView];
+                const tinygltf::Buffer& buf = model.buffers[view.buffer];
+                const unsigned char* p_start = buf.data.data() + view.byteOffset + acc.byteOffset;
+                const unsigned char* p_cur = nullptr;
+                for (p_cur = p_start; p_cur < p_start + view.byteLength; p_cur += sizeof(float) * 3)
+                {
+                    glm::vec3 normal = *reinterpret_cast<const glm::vec3*>(p_cur);
+                    p_va->normal = *reinterpret_cast<const glm::vec3*>(p_cur);
+                    p_va->color = glm::vec3(0.0, 0.0, 1.0);
+                    p_va++;
+                    // std::cout << "[" << va.normal.x << "," << va.normal.y<< "," << va.normal.z << "]" << std::endl;
+                }
+            }
+        }
+        std::cout << "Mesh vertex count: " << m_vertex_attributes.size() << std::endl;
+    }
+}
+
 } // namespace rendersystem

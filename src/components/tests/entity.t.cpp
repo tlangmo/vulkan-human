@@ -22,7 +22,7 @@ TEST_CASE("Adding components to an entity")
     e.add_component(std::make_shared<MyComponent>());
 
     auto e2 = e.get_component<MyComponent>();
-    REQUIRE(e2->id() != COMPONENT_ID(MyComponent));
+    REQUIRE(e2->id() == COMPONENT_ID(MyComponent));
 
     auto e3 = e.get_component<OtherComponent>();
     REQUIRE(e3 == nullptr);

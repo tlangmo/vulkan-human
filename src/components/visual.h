@@ -1,6 +1,8 @@
 #include "entity.h"
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
+#include "tiny_gltf.h"
+#include <string>
 #include <vector>
 
 namespace rendersystem
@@ -34,6 +36,20 @@ class VisualComponent : public Component
 
   private:
     std::vector<ColoredVertex> m_vertices;
+};
+
+class GLTFComponent : public Component
+{
+  public:
+    DEFINE_COMPONENT_ID(GLTFComponent);
+    GLTFComponent(const std::string& fn);
+    const tinygltf::Model& model()
+    {
+        return m_model;
+    };
+
+  private:
+    tinygltf::Model m_model;
 };
 
 } // namespace rendersystem

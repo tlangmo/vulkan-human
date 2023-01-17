@@ -65,6 +65,11 @@
         "thread": "cpp",
         "list": "cpp",
         "unordered_set": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "any": "cpp",
+        "codecvt": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp",
+        "csignal": "cpp"
     }
 }

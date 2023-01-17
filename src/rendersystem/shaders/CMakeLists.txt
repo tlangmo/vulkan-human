@@ -8,7 +8,7 @@ find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{
 
 foreach(GLSL ${GLSL_SOURCE_FILES})
   get_filename_component(FILE_NAME ${GLSL} NAME)
-  message(STATUS "Building shader...")
+  message(STATUS "Building shader... ${GLSL_SOURCE_FILES} ")
   set(SPIRV "${FILE_NAME}.spv")
   add_custom_command(
     OUTPUT ${SPIRV}
@@ -18,6 +18,6 @@ foreach(GLSL ${GLSL_SOURCE_FILES})
 endforeach(GLSL)
 
 add_custom_target(
-    Shaders 
+    shaders 
     DEPENDS ${SPIRV_BINARY_FILES}
 )

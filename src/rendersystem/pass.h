@@ -5,9 +5,11 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-namespace engine
+namespace rendersystem
 {
-
+/**
+ * Hold data for Vulkan Render Pass management.
+ */
 struct PassData
 {
     std::vector<VkFramebuffer> frame_buffers;
@@ -15,6 +17,7 @@ struct PassData
     std::vector<std::function<void()>> deletors;
 };
 
-PassData create_simple_pass(const CoreData& core_data, const SwapChainData& swap_chain_data);
+PassData create_basic_pass(const CoreData& core_data, const SwapChainData& swap_chain_data);
+void destroy_pass(VkDevice device, PassData* rd);
 
-} // namespace engine
+} // namespace rendersystem

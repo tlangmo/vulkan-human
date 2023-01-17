@@ -2,7 +2,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 
-using namespace engine;
+using namespace rendersystem;
 
 class MyComponent : public Component
 {

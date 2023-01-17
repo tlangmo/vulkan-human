@@ -10,7 +10,7 @@
 #include <mesh.h>
 #include <vector>
 #include <vulkan/vulkan.h>
-namespace engine
+namespace rendersystem
 {
 class RenderSystem
 {
@@ -22,12 +22,12 @@ class RenderSystem
 
   private:
     void create_pipeline();
-    void draw(size_t frame_number);
+    void draw(const std::vector<Entity>& entities, size_t frame_number);
 
   private:
-    engine::CoreData m_core;
-    engine::SwapChainData m_swapchain;
-    engine::PassData m_pass;
+    rendersystem::CoreData m_core;
+    rendersystem::SwapChainData m_swapchain;
+    rendersystem::PassData m_pass;
 
     VkPipeline m_pipeline;
     VkPipelineLayout m_pipeline_layout;
@@ -36,4 +36,4 @@ class RenderSystem
 
     std::unordered_map<std::size_t, std::unique_ptr<Mesh>> m_meshes;
 };
-} // namespace engine
+} // namespace rendersystem

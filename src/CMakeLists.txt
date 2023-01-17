@@ -7,10 +7,11 @@ find_package(glfw3 CONFIG REQUIRED)
 
 add_subdirectory(components)   
 add_subdirectory(rendersystem)
-add_subdirectory(shaders)
+
 
 
 add_executable(main main.cpp)
+
 
 target_link_libraries(main
     PRIVATE

@@ -6,6 +6,8 @@
 #include "check.h"
 #include "components/coordsys.h"
 #include "components/visual.h"
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <assert.h>
@@ -14,17 +16,24 @@
 #include <functional>
 #include <iostream>
 #include <vector>
-namespace engine
+namespace rendersystem
 {
+
+struct MeshPushConstants
+{
+    glm::vec4 data;
+    glm::mat4 render_matrix;
+};
+
 RenderSystem::RenderSystem()
 {
 }
 
 void RenderSystem::create(uint32_t width, uint32_t height)
 {
-    m_core = engine::create_core_with_window("vulkan_human", 640, 480);
-    m_swapchain = engine::create_swapchain(m_core.physical_device, m_core.device, m_core.surface);
-    m_pass = engine::create_simple_pass(m_core, m_swapchain);
+    m_core = rendersystem::create_core_with_window("vulkan_human", 640, 480);
+    m_swapchain = rendersystem::create_swapchain(m_core.physical_device, m_core.device, m_core.surface);
+    m_pass = rendersystem::create_basic_pass(m_core, m_swapchain);
 
     create_pipeline();
 }
@@ -43,17 +52,17 @@ void RenderSystem::destroy()
     vkDestroyShaderModule(m_core.device, m_triangle_frag, nullptr);
     vkDestroyShaderModule(m_core.device, m_triangle_vert, nullptr);
 
-    engine::destroy_data_object(m_pass);
-    engine::destroy_data_object(m_swapchain);
-    engine::destroy_data_object(m_core);
+    rendersystem::destroy_pass(m_core.device, &m_pass);
+    rendersystem::destroy_swapchain(m_core.device, &m_swapchain);
+    rendersystem::destroy_core(&m_core);
 }
 
 void RenderSystem::create_pipeline()
 {
-    engine::load_shader_module(m_core.device, "shaders/triangle.vert.spv", &m_triangle_vert);
-    engine::load_shader_module(m_core.device, "shaders/triangle.frag.spv", &m_triangle_frag);
+    rendersystem::load_shader_module(m_core.device, "rendersystem/shaders/mesh.vert.spv", &m_triangle_vert);
+    rendersystem::load_shader_module(m_core.device, "rendersystem/shaders/mesh.frag.spv", &m_triangle_frag);
 
-    engine::PipelineBuilder builder;
+    rendersystem::PipelineBuilder builder;
     builder.add_shader_stage(
         VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                                         .pNext = nullptr,
@@ -68,16 +77,14 @@ void RenderSystem::create_pipeline()
                                         .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
                                         .module = m_triangle_frag,
                                         .pName = "main"});
-    auto he = Mesh::get_vertex_input_description();
-    std::vector<VkVertexInputBindingDescription>& bindings = Mesh::get_vertex_input_description().bindings;
-    std::vector<VkVertexInputAttributeDescription>& attribs = Mesh::get_vertex_input_description().attributes;
-    builder.add_vertex_input_state(
-        VkPipelineVertexInputStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                                             .flags = VkPipelineVertexInputStateCreateFlags{},
-                                             .vertexBindingDescriptionCount = (uint32_t)bindings.size(),
-                                             .pVertexBindingDescriptions = bindings.data(),
-                                             .vertexAttributeDescriptionCount = (uint32_t)attribs.size(),
-                                             .pVertexAttributeDescriptions = attribs.data()});
+
+    builder.add_vertex_input_state(VkPipelineVertexInputStateCreateInfo{
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .flags = VkPipelineVertexInputStateCreateFlags{},
+        .vertexBindingDescriptionCount = (uint32_t)Mesh::get_vertex_input_description().bindings.size(),
+        .pVertexBindingDescriptions = Mesh::get_vertex_input_description().bindings.data(),
+        .vertexAttributeDescriptionCount = (uint32_t)Mesh::get_vertex_input_description().attributes.size(),
+        .pVertexAttributeDescriptions = Mesh::get_vertex_input_description().attributes.data()});
     builder.add_input_assembly_state(
         VkPipelineInputAssemblyStateCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
                                                .topology = VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST});
@@ -110,14 +117,25 @@ void RenderSystem::create_pipeline()
     pipeline_layout_info.flags = 0;
     pipeline_layout_info.setLayoutCount = 0;
     pipeline_layout_info.pSetLayouts = nullptr;
-    pipeline_layout_info.pushConstantRangeCount = 0;
-    pipeline_layout_info.pPushConstantRanges = nullptr;
+
+    // setup push constants
+    VkPushConstantRange push_constant;
+    // this push constant range starts at the beginning
+    push_constant.offset = 0;
+    // this push constant range takes up the size of a MeshPushConstants struct
+    push_constant.size = sizeof(MeshPushConstants);
+    // this push constant range is accessible only in the vertex shader
+    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    pipeline_layout_info.pPushConstantRanges = &push_constant;
+    pipeline_layout_info.pushConstantRangeCount = 1;
+
     VK_CHECK_RESULT(vkCreatePipelineLayout(m_core.device, &pipeline_layout_info, nullptr, &m_pipeline_layout));
 
     m_pipeline = builder.build(m_core.device, m_pass.render_pass, m_pipeline_layout);
 }
 
-void RenderSystem::draw(size_t frame_number)
+void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number)
 {
     /*Wait for the previous frame to finish
         Acquire an image from the swap chain
@@ -160,10 +178,39 @@ void RenderSystem::draw(size_t frame_number)
     vkCmdBindPipeline(m_core.cmd_buf_main, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
     // bind the mesh vertex buffer with offset 0
     VkDeviceSize offset = 0;
-    for (const auto& val : m_meshes)
+    for (const auto& ent : entities)
     {
-        vkCmdBindVertexBuffers(m_core.cmd_buf_main, 0, 1, &val.second->m_buffer, &offset);
-        vkCmdDraw(m_core.cmd_buf_main, val.second->m_vertex_attributes.size(), 1, 0, 0);
+        auto viz = ent.get_component<VisualComponent>();
+        auto coord = ent.get_component<CoordSysComponent>();
+        if (!viz)
+        {
+            continue;
+        }
+        std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
+        auto& render_mesh = m_meshes[viz_com_hash];
+        MeshPushConstants constants;
+        glm::vec3 cam_pos = {0.f, 0.f, -2.f};
+        glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+        // camera projection
+        glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+        projection[1][1] *= -1;
+        // model rotation
+        glm::mat4 model = glm::rotate(glm::mat4{1.0f}, glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0));
+        if (coord)
+        {
+            model = coord->mat_world() * model;
+        }
+
+        // calculate final mesh matrix
+        glm::mat4 mesh_matrix = projection * view * model;
+        constants.render_matrix = mesh_matrix;
+
+        // upload the matrix to the GPU via push constants
+        vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           sizeof(MeshPushConstants), &constants);
+
+        vkCmdBindVertexBuffers(m_core.cmd_buf_main, 0, 1, &render_mesh->buffer(), &offset);
+        vkCmdDraw(m_core.cmd_buf_main, render_mesh->vertices().size(), 1, 0, 0);
     }
 
     vkCmdEndRenderPass(m_core.cmd_buf_main);
@@ -223,9 +270,10 @@ void RenderSystem::process(const std::vector<Entity>& entities)
                 std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
                 if (m_meshes.find(viz_com_hash) == m_meshes.end())
                 {
-                    auto new_mesh = std::make_unique<Mesh>();
+                    auto render_mesh = std::make_unique<Mesh>();
                     std::transform(viz->vertices().begin(), viz->vertices().end(),
-                                   std::back_inserter(new_mesh->vertices()), [](ColoredVertex& v) -> VertexAttributes {
+                                   std::back_inserter(render_mesh->vertices()),
+                                   [](ColoredVertex& v) -> VertexAttributes {
                                        VertexAttributes va;
                                        va.position[0] = v.position[0];
                                        va.position[1] = v.position[1];
@@ -236,8 +284,8 @@ void RenderSystem::process(const std::vector<Entity>& entities)
                                        va.color[2] = v.color[2];
                                        return va;
                                    });
-                    new_mesh->create(m_core.allocator);
-                    m_meshes[viz_com_hash] = std::move(new_mesh);
+                    render_mesh->create(m_core.allocator);
+                    m_meshes[viz_com_hash] = std::move(render_mesh);
                 }
             }
         }
@@ -251,11 +299,11 @@ void RenderSystem::process(const std::vector<Entity>& entities)
         }
 
         glfwPollEvents();
-        draw(frame_number);
+        draw(entities, frame_number);
         frame_number++;
     }
     glfwDestroyWindow(m_core.window);
     glfwTerminate();
 }
 
-} // namespace engine
+} // namespace rendersystem

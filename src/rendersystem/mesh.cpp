@@ -3,7 +3,7 @@
 #include <cstring>
 #include <vk_mem_alloc.h>
 
-namespace engine
+namespace rendersystem
 {
 
 std::vector<VertexAttributes>& Mesh::vertices()
@@ -48,46 +48,41 @@ void Mesh::destroy(VmaAllocator vma_allocator)
     vmaDestroyBuffer(vma_allocator, m_buffer, m_allocation);
 }
 
-static VertexInputDescription get_input_desc()
+static VertexInputDescriptionData get_input_desc()
 {
     // we will have just 1 vertex buffer binding, with a per-vertex rate
-    VertexInputDescription description;
-    VkVertexInputBindingDescription mainBinding = {};
-    mainBinding.binding = 0;
-    mainBinding.stride = sizeof(VertexAttributes);
-    mainBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-    description.bindings.push_back(mainBinding);
+    VkVertexInputBindingDescription main_binding = {};
+    main_binding.binding = 0;
+    main_binding.stride = sizeof(VertexAttributes);
+    main_binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     // Position will be stored at Location 0
-    VkVertexInputAttributeDescription positionAttribute = {};
-    positionAttribute.binding = 0;
-    positionAttribute.location = 0;
-    positionAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-    positionAttribute.offset = offsetof(VertexAttributes, position);
+    VkVertexInputAttributeDescription position_attribute = {};
+    position_attribute.binding = 0;
+    position_attribute.location = 0;
+    position_attribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+    position_attribute.offset = offsetof(VertexAttributes, position);
 
     // Normal will be stored at Location 1
-    VkVertexInputAttributeDescription normalAttribute = {};
-    normalAttribute.binding = 0;
-    normalAttribute.location = 1;
-    normalAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-    normalAttribute.offset = offsetof(VertexAttributes, normal);
+    VkVertexInputAttributeDescription normal_attribute = {};
+    normal_attribute.binding = 0;
+    normal_attribute.location = 1;
+    normal_attribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+    normal_attribute.offset = offsetof(VertexAttributes, normal);
 
     // Color will be stored at Location 2
-    VkVertexInputAttributeDescription colorAttribute = {};
-    colorAttribute.binding = 0;
-    colorAttribute.location = 2;
-    colorAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
-    colorAttribute.offset = offsetof(VertexAttributes, color);
+    VkVertexInputAttributeDescription color_attribute = {};
+    color_attribute.binding = 0;
+    color_attribute.location = 2;
+    color_attribute.format = VK_FORMAT_R32G32B32_SFLOAT;
+    color_attribute.offset = offsetof(VertexAttributes, color);
 
-    description.attributes.push_back(positionAttribute);
-    description.attributes.push_back(normalAttribute);
-    description.attributes.push_back(colorAttribute);
-    return description;
+    return VertexInputDescriptionData{
+        .bindings{main_binding}, .attributes{position_attribute, normal_attribute, color_attribute}, .flags{}};
 }
-VertexInputDescription& Mesh::get_vertex_input_description()
+VertexInputDescriptionData& Mesh::get_vertex_input_description()
 {
-    static VertexInputDescription description = get_input_desc();
+    static VertexInputDescriptionData description = get_input_desc();
     return description;
 }
-} // namespace engine
+} // namespace rendersystem

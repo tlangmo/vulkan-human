@@ -7,9 +7,12 @@ VK_DEFINE_HANDLE(VmaAllocator)
 
 struct GLFWwindow;
 
-namespace engine
+namespace rendersystem
 {
 
+/**
+ * Hold data for Vulkan core objects.
+ */
 struct CoreData
 {
     GLFWwindow* window{nullptr};
@@ -30,17 +33,11 @@ struct CoreData
     VkSemaphore semaphore_render;
     VkFence fence_host;
 };
-
+/**
+ * Create Vulkan objects for on-screen rendering
+ */
 CoreData create_core_with_window(const std::string& app_name, uint32_t width, uint32_t height);
 
-template <typename T> void destroy_data_object(T& obj)
-{
-    for (auto it = obj.deletors.rbegin(); it != obj.deletors.rend(); it++)
-    {
-        (*it)(); // call the function
-    }
-}
+void destroy_core(CoreData* core_data);
 
-template <> void destroy_data_object(CoreData& core_data);
-
-} // namespace engine
+} // namespace rendersystem

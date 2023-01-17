@@ -2,7 +2,7 @@
 #include "swapchain.h"
 #include "VkBootstrap.h"
 
-namespace engine
+namespace rendersystem
 {
 SwapChainData create_swapchain(VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface)
 {
@@ -21,15 +21,16 @@ SwapChainData create_swapchain(VkPhysicalDevice physical_device, VkDevice device
     sd.swapchain_image_views = vkb_swapchain.get_image_views().value();
     sd.swapchain_format = vkb_swapchain.image_format;
 
-    sd.deletors.push_back([device, sd]() { vkDestroySwapchainKHR(device, sd.swapchain_khr, nullptr); });
-    sd.deletors.push_back([device, sd]() {
-        for (auto sc : sd.swapchain_image_views)
-        {
-            vkDestroyImageView(device, sc, nullptr);
-        }
-    });
-
     return sd;
 }
+void destroy_swapchain(VkDevice device, SwapChainData* sd)
+{
+    vkDestroySwapchainKHR(device, sd->swapchain_khr, nullptr);
+    for (auto sc : sd->swapchain_image_views)
+    {
+        vkDestroyImageView(device, sc, nullptr);
+    }
+    *sd = {};
+}
 
-} // namespace engine
+} // namespace rendersystem

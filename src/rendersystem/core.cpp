@@ -6,7 +6,7 @@
 #define VMA_IMPLEMENTATION
 #include "check.h"
 #include "vk_mem_alloc.h"
-namespace engine
+namespace rendersystem
 {
 
 CoreData create_core_with_window(const std::string& app_name, uint32_t width, uint32_t height)
@@ -94,18 +94,18 @@ CoreData create_core_with_window(const std::string& app_name, uint32_t width, ui
     return core_data;
 }
 
-template <> void destroy_data_object(CoreData& core_data)
+void destroy_core(CoreData* core_data)
 {
-    vkDestroyFence(core_data.device, core_data.fence_host, nullptr);
-    vkDestroySemaphore(core_data.device, core_data.semaphore_present, nullptr);
-    vkDestroySemaphore(core_data.device, core_data.semaphore_render, nullptr);
-    vkDestroyCommandPool(core_data.device, core_data.cmd_pool, nullptr);
-    vmaDestroyAllocator(core_data.allocator);
-    vkDestroyDevice(core_data.device, nullptr);
-    vkDestroySurfaceKHR(core_data.instance, core_data.surface, nullptr);
-    vkb::destroy_debug_utils_messenger(core_data.instance, core_data.debug_messenger);
-    vkDestroyInstance(core_data.instance, nullptr);
-    core_data = CoreData{};
+    vkDestroyFence(core_data->device, core_data->fence_host, nullptr);
+    vkDestroySemaphore(core_data->device, core_data->semaphore_present, nullptr);
+    vkDestroySemaphore(core_data->device, core_data->semaphore_render, nullptr);
+    vkDestroyCommandPool(core_data->device, core_data->cmd_pool, nullptr);
+    vmaDestroyAllocator(core_data->allocator);
+    vkDestroyDevice(core_data->device, nullptr);
+    vkDestroySurfaceKHR(core_data->instance, core_data->surface, nullptr);
+    vkb::destroy_debug_utils_messenger(core_data->instance, core_data->debug_messenger);
+    vkDestroyInstance(core_data->instance, nullptr);
+    *core_data = {};
 }
 
-} // namespace engine
+} // namespace rendersystem

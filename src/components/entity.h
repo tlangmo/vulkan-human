@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace engine
+namespace rendersystem
 {
 class Component
 {
@@ -28,7 +28,7 @@ class Entity
     {
         m_components[T::id()] = cmp;
     }
-    template <typename T> std::shared_ptr<T> get_component()
+    template <typename T> std::shared_ptr<T> get_component() const
     {
         auto it = m_components.find(T::id());
         if (it != m_components.end())
@@ -44,4 +44,4 @@ class Entity
   private:
     std::unordered_map<uint32_t, std::shared_ptr<Component>> m_components;
 };
-} // namespace engine
+} // namespace rendersystem

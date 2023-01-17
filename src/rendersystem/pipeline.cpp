@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace engine
+namespace rendersystem
 {
 
 PipelineBuilder& PipelineBuilder::add_shader_stage(const VkPipelineShaderStageCreateInfo& info)
@@ -105,13 +105,9 @@ VkPipeline PipelineBuilder::build(VkDevice device, VkRenderPass pass, VkPipeline
     VkPipeline newPipeline;
     if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &newPipeline) != VK_SUCCESS)
     {
-        std::cout << "failed to create pipeline\n";
-        return VK_NULL_HANDLE; // failed to create graphics pipeline
+        throw std::runtime_error("cannot build vkCreateGraphicsPipelines");
     }
-    else
-    {
-        return newPipeline;
-    }
+    return newPipeline;
 }
 
 void load_shader_module(VkDevice device, const char* filePath, VkShaderModule* out_shader_module)
@@ -145,4 +141,4 @@ void load_shader_module(VkDevice device, const char* filePath, VkShaderModule* o
     }
     *out_shader_module = shader_module;
 }
-} // namespace engine
+} // namespace rendersystem

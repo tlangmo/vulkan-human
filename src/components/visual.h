@@ -3,7 +3,7 @@
 #include "glm/vec3.hpp"
 #include <vector>
 
-namespace engine
+namespace rendersystem
 {
 struct ColoredVertex
 {
@@ -36,4 +36,4 @@ class VisualComponent : public Component
     std::vector<ColoredVertex> m_vertices;
 };
 
-} // namespace engine
+} // namespace rendersystem

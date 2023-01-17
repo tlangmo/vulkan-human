@@ -2,11 +2,11 @@
 #include "vulkan/vulkan_core.h"
 #include <functional>
 #include <vector>
-namespace engine
+namespace rendersystem
 {
 
 /**
- * Abstract Base class for Vulkan Swapchain management.
+ * Hold data for Vulkan swapchain management.
  */
 struct SwapChainData
 {
@@ -14,9 +14,8 @@ struct SwapChainData
     VkFormat swapchain_format;
     std::vector<VkImage> swapchain_images;
     std::vector<VkImageView> swapchain_image_views;
-    std::vector<std::function<void()>> deletors;
 };
 
 SwapChainData create_swapchain(VkPhysicalDevice physical_device, VkDevice device, VkSurfaceKHR surface);
-
-} // namespace engine
+void destroy_swapchain(VkDevice device, SwapChainData* sd);
+} // namespace rendersystem

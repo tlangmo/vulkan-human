@@ -7,10 +7,10 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-namespace engine
+namespace rendersystem
 {
 
-PassData create_simple_pass(const CoreData& core_data, const SwapChainData& swap_chain_data)
+PassData create_basic_pass(const CoreData& core_data, const SwapChainData& swap_chain_data)
 {
     // a nice explanation: https://developer.samsung.com/galaxy-gamedev/resources/articles/renderpasses.html
     PassData rd;
@@ -65,17 +65,17 @@ PassData create_simple_pass(const CoreData& core_data, const SwapChainData& swap
                        VK_CHECK_RESULT(vkCreateFramebuffer(core_data.device, &fb_info, nullptr, &fb));
                        return fb;
                    });
-
-    rd.deletors.push_back([core_data, rd]() { vkDestroyRenderPass(core_data.device, rd.render_pass, nullptr); });
-
-    rd.deletors.push_back([core_data, rd]() {
-        for (auto b : rd.frame_buffers)
-        {
-            vkDestroyFramebuffer(core_data.device, b, nullptr);
-        }
-    });
-
     return rd;
 }
 
-} // namespace engine
+void destroy_pass(VkDevice device, PassData* rd)
+{
+    vkDestroyRenderPass(device, rd->render_pass, nullptr);
+    for (auto b : rd->frame_buffers)
+    {
+        vkDestroyFramebuffer(device, b, nullptr);
+    }
+    rd = {};
+}
+
+} // namespace rendersystem

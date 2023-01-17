@@ -2,8 +2,13 @@
 
 #include <vector>
 #include <vulkan/vulkan.h>
-namespace engine
+
+namespace rendersystem
 {
+
+/**
+ * Mechanism to build VkPipeline objects more conveniently
+ */
 class PipelineBuilder
 {
 
@@ -13,8 +18,12 @@ class PipelineBuilder
     PipelineBuilder& add_input_assembly_state(const VkPipelineInputAssemblyStateCreateInfo& info);
     PipelineBuilder& add_rasterization_state(const VkPipelineRasterizationStateCreateInfo& info);
     PipelineBuilder& add_viewport(const VkViewport& view);
+    // do not use any multisampling anti-aliasign
     PipelineBuilder& no_msaa();
     PipelineBuilder& no_color_blend();
+    /**
+     * Use all previous information an create the vulkan pipeline. Note that
+     */
     VkPipeline build(VkDevice device, VkRenderPass pass, VkPipelineLayout layout);
 
   private:
@@ -31,4 +40,4 @@ class PipelineBuilder
 };
 
 void load_shader_module(VkDevice device, const char* file_path, VkShaderModule* out_shader_module);
-} // namespace engine
+} // namespace rendersystem

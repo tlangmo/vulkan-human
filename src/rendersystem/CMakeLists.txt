@@ -11,6 +11,8 @@ message(${Vulkan_INCLUDE_DIR})
 
 include_directories(${SDL2_INCLUDE_DIRS} ../../thirdparty/vk-bootstrap/src ${PARENT_DIR} )
 
+add_subdirectory(shaders)
+
 
 add_library(rendersystem OBJECT
                 rendersystem.cpp
@@ -20,4 +22,4 @@ add_library(rendersystem OBJECT
                 mesh.cpp
                 pipeline.cpp
 )
-
+add_dependencies(rendersystem shaders)

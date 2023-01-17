@@ -184,15 +184,12 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
 
         std::size_t viz_com_hash = 0;
         auto viz = ent.get_component<VisualComponent>();
-        auto viz_gltf = ent.get_component<GLTFComponent>();
-        if (!viz && !viz_gltf)
+        if (!viz)
         {
             continue;
         }
         if (viz)
             viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
-        if (viz_gltf)
-            viz_com_hash = std::hash<std::shared_ptr<GLTFComponent>>{}(viz_gltf);
 
         auto& render_mesh = m_meshes[viz_com_hash];
         MeshPushConstants constants;
@@ -261,7 +258,6 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
 
 void RenderSystem::process(const std::vector<Entity>& entities)
 {
-
     size_t frame_number = 0;
     while (!glfwWindowShouldClose(m_core.window))
     {
@@ -272,18 +268,8 @@ void RenderSystem::process(const std::vector<Entity>& entities)
                 std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
                 if (m_meshes.find(viz_com_hash) == m_meshes.end())
                 {
-                    m_meshes[viz_com_hash] = create_mesh_from_vertex_data<ColoredVertex>(viz->vertices());
+                    m_meshes[viz_com_hash] = create_mesh_from_vertex_data(viz->vertices());
                     m_meshes[viz_com_hash]->create(m_core.allocator);
-                }
-            }
-            if (auto viz = e.get_component<GLTFComponent>(); viz != nullptr)
-            {
-                std::size_t viz_com_hash = std::hash<std::shared_ptr<GLTFComponent>>{}(viz);
-                if (m_meshes.find(viz_com_hash) == m_meshes.end())
-                {
-                    m_meshes[viz_com_hash] = std::make_unique<Mesh>(viz->model());
-                    m_meshes[viz_com_hash]->create(m_core.allocator);
-                    std::cout << "size " << m_meshes[viz_com_hash]->vertices().size() << std::endl;
                 }
             }
         }

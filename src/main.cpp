@@ -13,7 +13,7 @@ Entity create_triangle()
     Entity e;
     auto coords = std::make_shared<CoordSysComponent>();
     e.add_component(coords);
-    e.add_component(std::make_shared<VisualComponent>());
+    e.add_component(VisualComponent::test_triangle());
     return e;
 }
 
@@ -22,7 +22,7 @@ Entity create_torus()
     Entity e;
     auto coords = std::make_shared<CoordSysComponent>();
     e.add_component(coords);
-    e.add_component(std::make_shared<GLTFComponent>("/home/tlangmo/dev/vulkan-human/assets/torus.gltf"));
+    e.add_component(VisualComponent::from_gltf_file("/home/tlangmo/dev/vulkan-human/assets/torus.gltf"));
     return e;
 }
 int main(int argc, char* argv[])

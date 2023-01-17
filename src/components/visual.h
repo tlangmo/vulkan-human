@@ -7,9 +7,12 @@
 
 namespace rendersystem
 {
-struct ColoredVertex
+
+struct StandardVertex
 {
     glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 uv;
     glm::vec3 color;
 };
 
@@ -19,37 +22,23 @@ class VisualComponent : public Component
     DEFINE_COMPONENT_ID(VisualComponent);
     VisualComponent()
     {
-        m_vertices.resize(3);
-        m_vertices[0].position = {1.f, 1.f, 0.0f};
-        m_vertices[1].position = {-1.f, 1.f, 0.0f};
-        m_vertices[2].position = {0.f, -1.f, 0.0f};
-
-        // vertex colors, all green
-        m_vertices[0].color = {1.f, 0.f, 0.0f};
-        m_vertices[1].color = {0.f, 1.f, 0.0f};
-        m_vertices[2].color = {0.f, 0.f, 1.0f};
     }
-    std::vector<ColoredVertex>& vertices()
+    std::vector<StandardVertex>& vertices()
     {
         return m_vertices;
     };
-
-  private:
-    std::vector<ColoredVertex> m_vertices;
-};
-
-class GLTFComponent : public Component
-{
-  public:
-    DEFINE_COMPONENT_ID(GLTFComponent);
-    GLTFComponent(const std::string& fn);
-    const tinygltf::Model& model()
+    std::vector<uint32_t>& indicies()
     {
-        return m_model;
+        return m_indicies;
     };
+    static std::shared_ptr<VisualComponent> test_triangle();
+    static std::shared_ptr<VisualComponent> from_gltf_file(const std::string& fn);
 
   private:
-    tinygltf::Model m_model;
+    std::vector<StandardVertex> m_vertices;
+    std::vector<uint32_t> m_indicies;
 };
+
+std::vector<StandardVertex> create_triangle_data();
 
 } // namespace rendersystem

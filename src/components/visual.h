@@ -31,6 +31,7 @@ class VisualComponent : public Component
     {
         return m_indicies;
     };
+
     static std::shared_ptr<VisualComponent> test_triangle();
     static std::shared_ptr<VisualComponent> from_gltf_file(const std::string& fn);
 

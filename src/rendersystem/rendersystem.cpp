@@ -181,17 +181,12 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     for (const auto& ent : entities)
     {
         auto coord = ent.get_component<CoordSysComponent>();
-
-        std::size_t viz_com_hash = 0;
         auto viz = ent.get_component<VisualComponent>();
         if (!viz)
         {
             continue;
         }
-        if (viz)
-            viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
-
-        auto& render_mesh = m_meshes[viz_com_hash];
+        auto& render_mesh = m_meshes[viz->hash()];
         MeshPushConstants constants;
         glm::vec3 cam_pos = {0.f, 0.f, -2.f};
         glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
@@ -265,7 +260,8 @@ void RenderSystem::process(const std::vector<Entity>& entities)
         {
             if (auto viz = e.get_component<VisualComponent>(); viz != nullptr)
             {
-                std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
+                // std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
+                size_t viz_com_hash = viz->hash();
                 if (m_meshes.find(viz_com_hash) == m_meshes.end())
                 {
                     m_meshes[viz_com_hash] = create_mesh_from_vertex_data(viz->vertices());

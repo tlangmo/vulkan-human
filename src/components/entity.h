@@ -8,6 +8,11 @@ namespace rendersystem
 {
 class Component
 {
+  public:
+    size_t hash()
+    {
+        return (size_t)(this);
+    }
 };
 
 inline constexpr uint32_t id_from_name(const char* str, size_t n, uint32_t basis = UINT32_C(2166136261))

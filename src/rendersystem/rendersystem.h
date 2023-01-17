@@ -24,6 +24,10 @@ template <typename T> std::unique_ptr<Mesh> create_mesh_from_vertex_data(const s
                        va.position[1] = v.position[1];
                        va.position[2] = v.position[2];
 
+                       va.normal[0] = v.normal[0];
+                       va.normal[1] = v.normal[1];
+                       va.normal[2] = v.normal[2];
+
                        va.color[0] = v.color[0];
                        va.color[1] = v.color[1];
                        va.color[2] = v.color[2];

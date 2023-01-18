@@ -2,6 +2,7 @@ include_directories(${CURRENT_SOURCE_DIR})
 
 set(SOURCES 
     ../visual.cpp   
+    coordsys.t.cpp
     visual.t.cpp
     entity.t.cpp
 )

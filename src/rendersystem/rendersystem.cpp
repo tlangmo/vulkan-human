@@ -10,6 +10,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <assert.h>
@@ -24,7 +25,7 @@ namespace rendersystem
 struct MeshPushConstants
 {
     glm::vec4 data;
-    glm::mat4 render_matrix;
+    glm::mat4 mvp_matrix;
 };
 
 RenderSystem::RenderSystem()
@@ -153,18 +154,12 @@ void RenderSystem::draw(Entity* entity, uint64_t elapsed_us, std::shared_ptr<Cam
     }
     auto& render_mesh = m_meshes[viz->hash()];
     MeshPushConstants constants;
-
-    // glm::vec3 cam_pos = {0.f, 0.f, -2.f};
-    // glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
-    // // camera projection
-    // glm::mat4 projection = glm::perspective(glm::radians(70.f),
-    // (float)m_core.window_size.width/m_core.window_size.height, 0.1f, 200.0f); projection[1][1] *= -1; model rotation
-    coord->rotation()[2] = coord->rotation()[2] + elapsed_sec;
-    glm::mat4 model_mat = coord->mat_world();
+    coord->rotation() = glm::rotate(coord->rotation(), 1 * elapsed_sec, glm::vec3(1, 0, 1));
+    glm::mat4 model_mat = coord->transform();
 
     // calculate final mesh matrix
-    glm::mat4 mvp_matrix = camera->projection_mat() * camera->view_mat() * model_mat;
-    constants.render_matrix = mvp_matrix;
+    glm::mat4 mvp_matrix = camera->projection_mat() * camera->coordsys().transform() * model_mat;
+    constants.mvp_matrix = mvp_matrix;
     // upload the matrix to the GPU via push constants
     vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
                        &constants);

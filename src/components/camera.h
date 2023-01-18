@@ -1,4 +1,5 @@
 #pragma once
+#include "coordsys.h"
 #include "entity.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -13,7 +14,7 @@ class CameraComponent : public Component
   public:
     DEFINE_COMPONENT_ID(CameraComponent);
     CameraComponent(float aspect, float fov_degrees)
-        : m_aspect{aspect}, m_fov_degrees{fov_degrees}, m_projection_mat{1.0}, m_view_mat{1.0}
+        : m_aspect{aspect}, m_fov_degrees{fov_degrees}, m_projection_mat{1.0}, m_coordsys{}
     {
         m_projection_mat = glm::perspective(glm::radians(m_fov_degrees), m_aspect, 0.1f, 200.0f);
         update_projection_matrix();
@@ -32,13 +33,13 @@ class CameraComponent : public Component
     {
         return m_projection_mat;
     }
-    const glm::mat4x4& view_mat() const
+    const CoordSysComponent& coordsys() const
     {
-        return m_view_mat;
+        return m_coordsys;
     }
-    glm::mat4x4& view_mat()
+    CoordSysComponent& coordsys()
     {
-        return m_view_mat;
+        return m_coordsys;
     }
 
   private:
@@ -52,6 +53,6 @@ class CameraComponent : public Component
     float m_aspect;
     float m_fov_degrees;
     glm::mat4x4 m_projection_mat;
-    glm::mat4x4 m_view_mat;
+    CoordSysComponent m_coordsys;
 };
 } // namespace rendersystem

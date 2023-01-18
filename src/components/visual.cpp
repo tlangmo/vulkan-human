@@ -9,7 +9,7 @@
 namespace rendersystem
 {
 
-std::shared_ptr<VisualComponent> VisualComponent::test_triangle()
+std::shared_ptr<VisualComponent> VisualComponent::make_triangle()
 {
     auto comp = std::make_shared<VisualComponent>();
     std::vector<StandardVertex>& vertices = comp->vertices();
@@ -17,6 +17,10 @@ std::shared_ptr<VisualComponent> VisualComponent::test_triangle()
     vertices[0].position = {1.f, 1.f, 0.0f};
     vertices[1].position = {-1.f, 1.f, 0.0f};
     vertices[2].position = {0.f, -1.f, 0.0f};
+
+    vertices[0].normal = {1.f, 0.f, 0.0f};
+    vertices[1].normal = {0.f, 1.f, 0.0f};
+    vertices[2].normal = {0.f, 0.f, 1.0f};
 
     vertices[0].color = {1.f, 0.f, 0.0f};
     vertices[1].color = {0.f, 1.f, 0.0f};

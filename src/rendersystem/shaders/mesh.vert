@@ -19,5 +19,5 @@ void main()
 {
     // output the position of each vertex
     gl_Position = PushConstants.render_matrix * vec4(vPosition, 1.0f);
-    outColor = vColor;
+    outColor = vNormal;
 }

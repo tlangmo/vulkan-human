@@ -74,6 +74,23 @@ PipelineBuilder& PipelineBuilder::add_viewport(const VkViewport& view)
     return *this;
 }
 
+PipelineBuilder& PipelineBuilder::depth_stencil(bool enabled, bool write_depth, VkCompareOp compare_op)
+{
+    VkPipelineDepthStencilStateCreateInfo info = {};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    info.pNext = nullptr;
+
+    info.depthTestEnable = enabled ? VK_TRUE : VK_FALSE;
+    info.depthWriteEnable = write_depth ? VK_TRUE : VK_FALSE;
+    info.depthCompareOp = enabled ? compare_op : VK_COMPARE_OP_ALWAYS;
+    info.depthBoundsTestEnable = VK_FALSE;
+    info.minDepthBounds = 0.0f; // Optional
+    info.maxDepthBounds = 1.0f; // Optional
+    info.stencilTestEnable = VK_FALSE;
+    m_depth_stencil_state = info;
+    return *this;
+}
+
 VkPipeline PipelineBuilder::build(VkDevice device, VkRenderPass pass, VkPipelineLayout layout)
 {
     VkPipelineViewportStateCreateInfo viewportState = {};
@@ -100,6 +117,7 @@ VkPipeline PipelineBuilder::build(VkDevice device, VkRenderPass pass, VkPipeline
     pipeline_info.renderPass = pass;
     pipeline_info.subpass = 0;
     pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+    pipeline_info.pDepthStencilState = &m_depth_stencil_state;
 
     // //it's easy to error out on create graphics pipeline, so we handle it a bit better than the common VK_CHECK case
     VkPipeline newPipeline;

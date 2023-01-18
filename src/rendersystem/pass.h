@@ -14,7 +14,6 @@ struct PassData
 {
     std::vector<VkFramebuffer> frame_buffers;
     VkRenderPass render_pass;
-    std::vector<std::function<void()>> deletors;
 };
 
 PassData create_basic_pass(const CoreData& core_data, const SwapChainData& swap_chain_data);

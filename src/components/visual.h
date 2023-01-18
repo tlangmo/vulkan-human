@@ -15,6 +15,9 @@ struct StandardVertex
     glm::vec3 color;
 };
 
+/**A simple 3D mesh
+ *
+ */
 class VisualComponent : public Component
 {
   public:
@@ -39,7 +42,7 @@ class VisualComponent : public Component
         return m_indices;
     };
 
-    static std::shared_ptr<VisualComponent> test_triangle();
+    static std::shared_ptr<VisualComponent> make_triangle();
     static std::shared_ptr<VisualComponent> from_gltf_file(const std::string& fn);
 
   private:

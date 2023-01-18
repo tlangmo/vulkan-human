@@ -6,6 +6,7 @@
 #include "check.h"
 #include "components/coordsys.h"
 #include "components/visual.h"
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include <GLFW/glfw3.h>
@@ -32,7 +33,7 @@ RenderSystem::RenderSystem()
 void RenderSystem::create(uint32_t width, uint32_t height)
 {
     m_core = rendersystem::create_core_with_window("vulkan_human", 640, 480);
-    m_swapchain = rendersystem::create_swapchain(m_core.physical_device, m_core.device, m_core.surface);
+    m_swapchain = rendersystem::create_swapchain(m_core);
     m_pass = rendersystem::create_basic_pass(m_core, m_swapchain);
 
     create_pipeline();
@@ -53,7 +54,7 @@ void RenderSystem::destroy()
     vkDestroyShaderModule(m_core.device, m_triangle_vert, nullptr);
 
     rendersystem::destroy_pass(m_core.device, &m_pass);
-    rendersystem::destroy_swapchain(m_core.device, &m_swapchain);
+    rendersystem::destroy_swapchain(m_core, &m_swapchain);
     rendersystem::destroy_core(&m_core);
 }
 
@@ -107,6 +108,7 @@ void RenderSystem::create_pipeline()
                           .height = (float)m_core.window_size.height,
                           .minDepth = 0,
                           .maxDepth = 1});
+    builder.depth_stencil(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
     builder.no_msaa();
     builder.no_color_blend();
 
@@ -163,6 +165,10 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     float flash = std::abs(sin((double)frame_number / 30.f));
     clearValue.color = {{0.0f, 1.0f, flash, 1.0f}};
 
+    VkClearValue depthClear;
+    depthClear.depthStencil.depth = 1.f;
+
+    VkClearValue clearValues[] = {clearValue, depthClear};
     VkRenderPassBeginInfo rp_info = {};
     rp_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     rp_info.pNext = nullptr;
@@ -171,8 +177,8 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     rp_info.renderArea.offset.y = 0;
     rp_info.renderArea.extent = m_core.window_size;
     rp_info.framebuffer = m_pass.frame_buffers[swap_chain_index];
-    rp_info.clearValueCount = 1;
-    rp_info.pClearValues = &clearValue;
+    rp_info.clearValueCount = 2;
+    rp_info.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(m_core.cmd_buf_main, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(m_core.cmd_buf_main, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);

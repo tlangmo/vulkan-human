@@ -1,12 +1,14 @@
 #pragma once
 
 #include "VkBootstrap.h"
+#include "camera.h"
 #include "core.h"
 #include "entity.h"
 #include "mesh.h"
 #include "pass.h"
 #include "swapchain.h"
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <mesh.h>
 #include <vector>
@@ -42,13 +44,15 @@ class RenderSystem
 {
   public:
     RenderSystem();
-    void create(uint32_t width, uint32_t height);
+    GLFWwindow* create(uint32_t width, uint32_t height);
     void destroy();
-    void process(const std::vector<Entity>& entities);
+    void process(const std::vector<Entity>& entities, uint64_t elapsed_us);
 
   private:
     void create_pipeline();
-    void draw(const std::vector<Entity>& entities, size_t frame_number);
+    void draw(Entity* entity, uint64_t elapsed_us, std::shared_ptr<CameraComponent> camera);
+    uint32_t begin_pass(VkClearColorValue clear_color);
+    void present_pass(uint32_t swap_chain_index);
 
   private:
     rendersystem::CoreData m_core;

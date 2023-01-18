@@ -4,6 +4,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include "VkBootstrap.h"
 #include "check.h"
+#include "components/camera.h"
 #include "components/coordsys.h"
 #include "components/visual.h"
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -30,13 +31,14 @@ RenderSystem::RenderSystem()
 {
 }
 
-void RenderSystem::create(uint32_t width, uint32_t height)
+GLFWwindow* RenderSystem::create(uint32_t width, uint32_t height)
 {
     m_core = rendersystem::create_core_with_window("vulkan_human", 640, 480);
     m_swapchain = rendersystem::create_swapchain(m_core);
     m_pass = rendersystem::create_basic_pass(m_core, m_swapchain);
 
     create_pipeline();
+    return m_core.window;
 }
 
 void RenderSystem::destroy()
@@ -137,23 +139,49 @@ void RenderSystem::create_pipeline()
     m_pipeline = builder.build(m_core.device, m_pass.render_pass, m_pipeline_layout);
 }
 
-void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number)
+void RenderSystem::draw(Entity* entity, uint64_t elapsed_us, std::shared_ptr<CameraComponent> camera)
 {
-    /*Wait for the previous frame to finish
-        Acquire an image from the swap chain
-        Record a command buffer which draws the scene onto that image
-        Submit the recorded command buffer
-        Present the swap chain image*/
+    float elapsed_sec = (float)(elapsed_us / 1000000.0f);
+    vkCmdBindPipeline(m_core.cmd_buf_main, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    // bind the mesh vertex buffer with offset 0
+
+    auto coord = entity->get_component<CoordSysComponent>();
+    auto viz = entity->get_component<VisualComponent>();
+    if (!viz)
+    {
+        return;
+    }
+    auto& render_mesh = m_meshes[viz->hash()];
+    MeshPushConstants constants;
+
+    // glm::vec3 cam_pos = {0.f, 0.f, -2.f};
+    // glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+    // // camera projection
+    // glm::mat4 projection = glm::perspective(glm::radians(70.f),
+    // (float)m_core.window_size.width/m_core.window_size.height, 0.1f, 200.0f); projection[1][1] *= -1; model rotation
+    coord->rotation()[2] = coord->rotation()[2] + elapsed_sec;
+    glm::mat4 model_mat = coord->mat_world();
+
+    // calculate final mesh matrix
+    glm::mat4 mvp_matrix = camera->projection_mat() * camera->view_mat() * model_mat;
+    constants.render_matrix = mvp_matrix;
+    // upload the matrix to the GPU via push constants
+    vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
+                       &constants);
+
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(m_core.cmd_buf_main, 0, 1, &render_mesh->vb(), &offset);
+    vkCmdBindIndexBuffer(m_core.cmd_buf_main, render_mesh->ib(), 0, VK_INDEX_TYPE_UINT32);
+    vkCmdDrawIndexed(m_core.cmd_buf_main, render_mesh->indices().size(), 1, 0, 0, 0);
+}
+
+uint32_t RenderSystem::begin_pass(VkClearColorValue clear_color)
+{
     const uint64_t kTimeout = 1'000'000'000;
     uint32_t swap_chain_index = 0;
     vkWaitForFences(m_core.device, 1, &m_core.fence_host, VK_TRUE, UINT64_MAX);
     VK_CHECK_RESULT(vkAcquireNextImageKHR(m_core.device, m_swapchain.swapchain_khr, kTimeout, m_core.semaphore_present,
                                           nullptr, &swap_chain_index));
-
-    // // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkFence.html
-    // // A fence can be signaled as part of the execution of a queue submission command.
-    // // Fences can be unsignaled on the host with vkResetFences.
-
     vkResetCommandBuffer(m_core.cmd_buf_main, 0);
 
     VkCommandBufferBeginInfo cmd_begin_info = {};
@@ -162,8 +190,7 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     VK_CHECK_RESULT(vkBeginCommandBuffer(m_core.cmd_buf_main, &cmd_begin_info));
 
     VkClearValue clearValue;
-    float flash = std::abs(sin((double)frame_number / 30.f));
-    clearValue.color = {{0.0f, 1.0f, flash, 1.0f}};
+    clearValue.color = clear_color;
 
     VkClearValue depthClear;
     depthClear.depthStencil.depth = 1.f;
@@ -181,46 +208,12 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     rp_info.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(m_core.cmd_buf_main, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(m_core.cmd_buf_main, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-    // bind the mesh vertex buffer with offset 0
-    VkDeviceSize offset = 0;
-    for (const auto& ent : entities)
-    {
-        auto coord = ent.get_component<CoordSysComponent>();
-        auto viz = ent.get_component<VisualComponent>();
-        if (!viz)
-        {
-            continue;
-        }
-        auto& render_mesh = m_meshes[viz->hash()];
-        MeshPushConstants constants;
-        glm::vec3 cam_pos = {0.f, 0.f, -2.f};
-        glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
-        // camera projection
-        glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-        projection[1][1] *= -1;
-        // model rotation
-        glm::mat4 model = glm::rotate(glm::mat4{1.0f}, glm::radians(frame_number * 0.4f), glm::vec3(0, 1, 0));
-        if (coord)
-        {
-            model = coord->mat_world() * model;
-        }
 
-        // calculate final mesh matrix
-        glm::mat4 mesh_matrix = projection * view * model;
-        constants.render_matrix = mesh_matrix;
-        // constants.render_matrix =glm::mat4{1.0};
-        ;
-        // upload the matrix to the GPU via push constants
-        vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           sizeof(MeshPushConstants), &constants);
+    return swap_chain_index;
+}
 
-        vkCmdBindVertexBuffers(m_core.cmd_buf_main, 0, 1, &render_mesh->vb(), &offset);
-        vkCmdBindIndexBuffer(m_core.cmd_buf_main, render_mesh->ib(), 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(m_core.cmd_buf_main, render_mesh->indices().size(), 1, 0, 0, 0);
-        // vkCmdDraw(m_core.cmd_buf_main, render_mesh->vertices().size(), 1, 0, 0);
-    }
-
+void RenderSystem::present_pass(uint32_t swap_chain_index)
+{
     vkCmdEndRenderPass(m_core.cmd_buf_main);
     VK_CHECK_RESULT(vkEndCommandBuffer(m_core.cmd_buf_main));
 
@@ -256,42 +249,36 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
     presentInfo.pWaitSemaphores = &m_core.semaphore_render;
     presentInfo.waitSemaphoreCount = 1;
 
-    VkResult res = vkQueuePresentKHR(m_core.present_queue, &presentInfo);
+    vkQueuePresentKHR(m_core.present_queue, &presentInfo);
 }
 
-void RenderSystem::process(const std::vector<Entity>& entities)
+void RenderSystem::process(const std::vector<Entity>& entities, uint64_t elapsed_us)
 {
-    size_t frame_number = 0;
-    while (!glfwWindowShouldClose(m_core.window))
+    std::shared_ptr<CameraComponent> main_camera;
+    for (auto e : entities)
     {
-        for (auto e : entities)
+        // find the main camera in the entities
+        if (auto cam = e.get_component<CameraComponent>(); cam != nullptr)
         {
-            if (auto viz = e.get_component<VisualComponent>(); viz != nullptr)
+            main_camera = cam;
+        }
+        if (auto viz = e.get_component<VisualComponent>(); viz != nullptr)
+        {
+            size_t viz_com_hash = viz->hash();
+            if (m_meshes.find(viz_com_hash) == m_meshes.end())
             {
-                // std::size_t viz_com_hash = std::hash<std::shared_ptr<VisualComponent>>{}(viz);
-                size_t viz_com_hash = viz->hash();
-                if (m_meshes.find(viz_com_hash) == m_meshes.end())
-                {
-                    m_meshes[viz_com_hash] = create_mesh_from_vertex_data(viz->vertices(), viz->indices());
-                    m_meshes[viz_com_hash]->create(m_core.allocator);
-                }
+                m_meshes[viz_com_hash] = create_mesh_from_vertex_data(viz->vertices(), viz->indices());
+                m_meshes[viz_com_hash]->create(m_core.allocator);
             }
         }
-        if (glfwGetKey(m_core.window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        {
-            glfwSetWindowShouldClose(m_core.window, true);
-        }
-        if (glfwGetMouseButton(m_core.window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-        {
-            std::cout << "right mouse button pressed" << std::endl;
-        }
-
-        glfwPollEvents();
-        draw(entities, frame_number);
-        frame_number++;
     }
-    glfwDestroyWindow(m_core.window);
-    glfwTerminate();
+    uint32_t swap_chain_index = begin_pass({0.4, 0.2, 0.5});
+    for (auto e : entities)
+    {
+        draw(&e, elapsed_us, main_camera);
+    }
+
+    present_pass(swap_chain_index);
 }
 
 } // namespace rendersystem

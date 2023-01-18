@@ -59,6 +59,7 @@ SwapChainData create_swapchain(const CoreData& core_data)
     vkb::Swapchain vkb_swapchain = vkb_swapchain_builder
                                        .use_default_format_selection()
                                        // use vsync present mode
+                                       .set_desired_min_image_count(1)
                                        .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
                                        .build()
                                        .value();

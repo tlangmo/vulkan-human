@@ -1,9 +1,9 @@
 #pragma once
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
 namespace rendersystem
 {
 class Component

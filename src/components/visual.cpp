@@ -1,4 +1,9 @@
+
 #include "visual.h"
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "tiny_gltf.h"
 #include <iostream>
 
 namespace rendersystem
@@ -16,6 +21,7 @@ std::shared_ptr<VisualComponent> VisualComponent::test_triangle()
     vertices[0].color = {1.f, 0.f, 0.0f};
     vertices[1].color = {0.f, 1.f, 0.0f};
     vertices[2].color = {0.f, 0.f, 1.0f};
+    comp->indices() = {0, 1, 2};
     return comp;
 }
 
@@ -29,48 +35,68 @@ std::shared_ptr<VisualComponent> VisualComponent::from_gltf_file(const std::stri
     {
         throw std::runtime_error("cannot load gltf file");
     }
+    // we only support single meshes for now. Validate
+    if (model.meshes.size() > 1 || model.meshes[0].primitives.size() > 1)
+    {
+        throw std::runtime_error("gltf file contains more than one mesh! unsupported.");
+    }
+
     auto comp = std::make_shared<VisualComponent>();
     std::vector<StandardVertex>& vertices = comp->vertices();
+
     // // extract the indicies for the first model;
-    for (const tinygltf::Mesh& m : model.meshes)
+    const tinygltf::Mesh& m = model.meshes[0];
+    const tinygltf::Primitive& p = m.primitives[0];
+    auto& acc_index = model.accessors[p.indices];
+    const tinygltf::BufferView& index_view = model.bufferViews[acc_index.bufferView];
+    const tinygltf::Buffer& index_buffer = model.buffers[index_view.buffer];
+
+    if (acc_index.type == TINYGLTF_TYPE_SCALAR)
     {
-        for (const tinygltf::Primitive& p : m.primitives)
-        {
-            StandardVertex va;
-            {
-                auto& acc = model.accessors[p.attributes.at("POSITION")];
-                const tinygltf::BufferView& view = model.bufferViews[acc.bufferView];
-                const tinygltf::Buffer& buf = model.buffers[view.buffer];
-                const unsigned char* p_start = buf.data.data() + view.byteOffset + acc.byteOffset;
-                const unsigned char* p_cur = nullptr;
-                for (p_cur = p_start; p_cur < p_start + view.byteLength; p_cur += sizeof(float) * 3)
-                {
-                    glm::vec3 pos = *reinterpret_cast<const glm::vec3*>(p_cur);
-                    va.position = *reinterpret_cast<const glm::vec3*>(p_cur);
-                    vertices.push_back(va);
-                    // std::cout << "[" << va.position.x << "," << va.position.y<< "," << va.position.z << "]" <<
-                    // std::endl;
-                }
-            }
-            StandardVertex* p_va = vertices.data();
-            {
-                auto& acc = model.accessors[p.attributes.at("NORMAL")];
-                const tinygltf::BufferView& view = model.bufferViews[acc.bufferView];
-                const tinygltf::Buffer& buf = model.buffers[view.buffer];
-                const unsigned char* p_start = buf.data.data() + view.byteOffset + acc.byteOffset;
-                const unsigned char* p_cur = nullptr;
-                for (p_cur = p_start; p_cur < p_start + view.byteLength; p_cur += sizeof(float) * 3)
-                {
-                    glm::vec3 normal = *reinterpret_cast<const glm::vec3*>(p_cur);
-                    p_va->normal = *reinterpret_cast<const glm::vec3*>(p_cur);
-                    p_va->color = glm::vec3(0.0, 0.0, 1.0);
-                    p_va++;
-                    // std::cout << "[" << va.normal.x << "," << va.normal.y<< "," << va.normal.z << "]" << std::endl;
-                }
-            }
-        }
-        std::cout << "Mesh vertex count: " << vertices.size() << std::endl;
+        const unsigned char* p_start = index_buffer.data.data() + index_view.byteOffset + acc_index.byteOffset;
+        const unsigned char* p_end = p_start + index_view.byteLength;
+        comp->indices() = (acc_index.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT)
+                              ? load_indices_raw<uint16_t>(p_start, p_end)
+                              : load_indices_raw<uint32_t>(p_start, p_end);
     }
+
+    {
+        auto& acc = model.accessors[p.attributes.at("POSITION")];
+        vertices.resize(acc.count);
+        StandardVertex* p_va = vertices.data();
+        iterate_accessor<glm::vec3>(acc, model, [&p_va](const glm::vec3& pos) {
+            p_va->position = pos;
+            p_va->color = glm::vec3(1.0, 0.0, 1.0);
+            p_va++;
+        });
+    }
+    {
+        StandardVertex* p_va = vertices.data();
+        auto& acc = model.accessors[p.attributes.at("NORMAL")];
+        if (acc.count != vertices.size())
+        {
+            throw std::runtime_error("gltf attributes are of inconsistent size.unsupported!");
+        }
+        iterate_accessor<glm::vec3>(acc, model, [&vertices, &p_va](const glm::vec3& normal) {
+            p_va->normal = normal;
+            p_va++;
+        });
+    }
+    {
+        StandardVertex* p_va = vertices.data();
+        auto& acc = model.accessors[p.attributes.at("TEXCOORD_0")];
+        if (acc.count != vertices.size())
+        {
+            throw std::runtime_error("gltf attributes are of inconsistent size.unsupported!");
+        }
+        iterate_accessor<glm::vec3>(acc, model, [&vertices, &p_va](const glm::vec2& tex_coords) {
+            p_va->uv = tex_coords;
+            p_va++;
+        });
+    }
+
+    std::cout << "Mesh stats:\n#vertices:\t" << comp->vertices().size() << "\n#indices:\t" << comp->indices().size()
+              << std::endl;
 
     return comp;
 }

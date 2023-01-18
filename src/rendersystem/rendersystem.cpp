@@ -209,8 +209,10 @@ void RenderSystem::draw(const std::vector<Entity>& entities, size_t frame_number
         vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                            sizeof(MeshPushConstants), &constants);
 
-        vkCmdBindVertexBuffers(m_core.cmd_buf_main, 0, 1, &render_mesh->buffer(), &offset);
-        vkCmdDraw(m_core.cmd_buf_main, render_mesh->vertices().size(), 1, 0, 0);
+        vkCmdBindVertexBuffers(m_core.cmd_buf_main, 0, 1, &render_mesh->vb(), &offset);
+        vkCmdBindIndexBuffer(m_core.cmd_buf_main, render_mesh->ib(), 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(m_core.cmd_buf_main, render_mesh->indices().size(), 1, 0, 0, 0);
+        // vkCmdDraw(m_core.cmd_buf_main, render_mesh->vertices().size(), 1, 0, 0);
     }
 
     vkCmdEndRenderPass(m_core.cmd_buf_main);
@@ -264,7 +266,7 @@ void RenderSystem::process(const std::vector<Entity>& entities)
                 size_t viz_com_hash = viz->hash();
                 if (m_meshes.find(viz_com_hash) == m_meshes.end())
                 {
-                    m_meshes[viz_com_hash] = create_mesh_from_vertex_data(viz->vertices());
+                    m_meshes[viz_com_hash] = create_mesh_from_vertex_data(viz->vertices(), viz->indices());
                     m_meshes[viz_com_hash]->create(m_core.allocator);
                 }
             }

@@ -2,54 +2,65 @@
 #include "check.h"
 #include <cstring>
 #include <vk_mem_alloc.h>
-#define TINYGLTF_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "tiny_gltf.h"
 
 namespace rendersystem
 {
 
-std::vector<VertexAttributes>& Mesh::vertices()
-{
-    return m_vertex_attributes;
-}
-const std::vector<VertexAttributes>& Mesh::vertices() const
-{
-    return m_vertex_attributes;
-}
-
 void Mesh::create(VmaAllocator vma_allocator)
 {
-    assert(m_buffer == nullptr);
+    assert(m_vertex_buffer == nullptr);
+    assert(m_index_buffer == nullptr);
     if (m_vertex_attributes.empty())
     {
         throw std::runtime_error("cannot upload an empty mesh");
     }
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        // this is the total size, in bytes, of the buffer we are allocating
+        bufferInfo.size = m_vertex_attributes.size() * sizeof(VertexAttributes);
+        // this buffer is going to be used as a Vertex Buffer
+        bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-    VkBufferCreateInfo bufferInfo = {};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    // this is the total size, in bytes, of the buffer we are allocating
-    bufferInfo.size = m_vertex_attributes.size() * sizeof(VertexAttributes);
-    // this buffer is going to be used as a Vertex Buffer
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        // let the VMA library know that this data should be writeable by CPU, but also readable by GPU
+        VmaAllocationCreateInfo vmaallocInfo = {};
+        vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-    // let the VMA library know that this data should be writeable by CPU, but also readable by GPU
-    VmaAllocationCreateInfo vmaallocInfo = {};
-    vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        // allocate the vertex buffer
+        VK_CHECK_RESULT(
+            vmaCreateBuffer(vma_allocator, &bufferInfo, &vmaallocInfo, &m_vertex_buffer, &m_vb_allocation, nullptr));
+        void* data;
+        VK_CHECK_RESULT(vmaMapMemory(vma_allocator, m_vb_allocation, &data));
+        memcpy(data, m_vertex_attributes.data(), m_vertex_attributes.size() * sizeof(VertexAttributes));
+        vmaUnmapMemory(vma_allocator, m_vb_allocation);
+    }
 
-    // allocate the buffer
-    VK_CHECK_RESULT(vmaCreateBuffer(vma_allocator, &bufferInfo, &vmaallocInfo, &m_buffer, &m_allocation, nullptr));
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        // this is the total size, in bytes, of the buffer we are allocating
+        bufferInfo.size = m_indices.size() * sizeof(uint32_t);
+        // this buffer is going to be used as a Vertex Buffer
+        bufferInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-    void* data;
-    VK_CHECK_RESULT(vmaMapMemory(vma_allocator, m_allocation, &data));
-    memcpy(data, m_vertex_attributes.data(), m_vertex_attributes.size() * sizeof(VertexAttributes));
-    vmaUnmapMemory(vma_allocator, m_allocation);
+        // let the VMA library know that this data should be writeable by CPU, but also readable by GPU
+        VmaAllocationCreateInfo vmaallocInfo = {};
+        vmaallocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+        // allocate the vertex buffer
+        VK_CHECK_RESULT(
+            vmaCreateBuffer(vma_allocator, &bufferInfo, &vmaallocInfo, &m_index_buffer, &m_ib_allocation, nullptr));
+        void* data;
+        VK_CHECK_RESULT(vmaMapMemory(vma_allocator, m_ib_allocation, &data));
+        memcpy(data, m_indices.data(), m_indices.size() * sizeof(uint32_t));
+        vmaUnmapMemory(vma_allocator, m_ib_allocation);
+    }
 }
 
 void Mesh::destroy(VmaAllocator vma_allocator)
 {
-    vmaDestroyBuffer(vma_allocator, m_buffer, m_allocation);
+    vmaDestroyBuffer(vma_allocator, m_vertex_buffer, m_vb_allocation);
+    vmaDestroyBuffer(vma_allocator, m_index_buffer, m_ib_allocation);
 }
 
 static VertexInputDescriptionData get_input_desc()
@@ -81,8 +92,16 @@ static VertexInputDescriptionData get_input_desc()
     color_attribute.format = VK_FORMAT_R32G32B32_SFLOAT;
     color_attribute.offset = offsetof(VertexAttributes, color);
 
-    return VertexInputDescriptionData{
-        .bindings{main_binding}, .attributes{position_attribute, normal_attribute, color_attribute}, .flags{}};
+    // uv will be stored at Location 3
+    VkVertexInputAttributeDescription uv_attribute = {};
+    uv_attribute.binding = 0;
+    uv_attribute.location = 3;
+    uv_attribute.format = VK_FORMAT_R32G32_SFLOAT;
+    uv_attribute.offset = offsetof(VertexAttributes, uv);
+
+    return VertexInputDescriptionData{.bindings{main_binding},
+                                      .attributes{position_attribute, normal_attribute, color_attribute, uv_attribute},
+                                      .flags{}};
 }
 VertexInputDescriptionData& Mesh::get_vertex_input_description()
 {

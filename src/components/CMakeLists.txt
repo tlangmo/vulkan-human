@@ -8,8 +8,5 @@ add_library(components OBJECT
                 visual.cpp
 )
 target_include_directories(components PRIVATE ${TINYGLTF_INCLUDE_DIRS})
-
-add_executable(components_test tests/entity.t.cpp)
-target_link_libraries(components_test PRIVATE  Catch2::Catch2WithMain)
-add_test(components_test components_test)
+add_subdirectory(tests)
 

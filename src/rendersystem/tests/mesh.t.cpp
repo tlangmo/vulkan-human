@@ -5,12 +5,8 @@
 
 using namespace rendersystem;
 
-// TEST_CASE("Mesh gltf")
-// {
-//     tinygltf::TinyGLTF loader;
-//     std::string err;
-//     std::string warn;
-//     tinygltf::Model model;
-//     REQUIRE(loader.LoadASCIIFromFile(&model, &err, &warn, "/home/tlangmo/dev/vulkan-human/assets/torus.gltf"));
-//     Mesh m(model);
-// }
+TEST_CASE("Mesh")
+{
+    Mesh m;
+    REQUIRE(2 == 2);
+}

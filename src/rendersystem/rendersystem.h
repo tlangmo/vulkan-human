@@ -14,7 +14,8 @@
 namespace rendersystem
 {
 
-template <typename T> std::unique_ptr<Mesh> create_mesh_from_vertex_data(const std::vector<T>& vertices)
+template <typename T>
+std::unique_ptr<Mesh> create_mesh_from_vertex_data(const std::vector<T>& vertices, const std::vector<uint32_t>& indices)
 {
     auto render_mesh = std::make_unique<Mesh>();
     std::transform(vertices.begin(), vertices.end(), std::back_inserter(render_mesh->vertices()),
@@ -33,7 +34,7 @@ template <typename T> std::unique_ptr<Mesh> create_mesh_from_vertex_data(const s
                        va.color[2] = v.color[2];
                        return va;
                    });
-
+    render_mesh->indices() = indices;
     return std::move(render_mesh);
 }
 

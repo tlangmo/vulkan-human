@@ -16,6 +16,7 @@ CoreData create_core_with_window(const std::string& app_name, uint32_t width, ui
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
     core_data.window = glfwCreateWindow(width, height, app_name.c_str(), nullptr, nullptr);
     core_data.window_size = VkExtent2D{width, height};
     uint32_t ext_count = 0;

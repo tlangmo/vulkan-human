@@ -5,13 +5,13 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 
-namespace rendersystem
+namespace components
 {
-class CoordSysComponent : public Component
+class CoordSys : public Component
 {
   public:
-    DEFINE_COMPONENT_ID(CoordSysComponent);
-    CoordSysComponent() : m_rotation{1, 0, 0, 0}, m_position{} {};
+    DEFINE_COMPONENT_ID(CoordSys);
+    CoordSys() : m_rotation{1, 0, 0, 0}, m_position{} {};
 
     const glm::vec3& position() const
     {
@@ -42,4 +42,4 @@ class CoordSysComponent : public Component
     glm::vec3 m_position;
     glm::quat m_rotation;
 };
-} // namespace rendersystem
+} // namespace components

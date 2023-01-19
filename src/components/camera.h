@@ -6,15 +6,15 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec3.hpp"
 
-namespace rendersystem
+namespace components
 {
 
-class CameraComponent : public Component
+class Camera : public Component
 {
   public:
-    DEFINE_COMPONENT_ID(CameraComponent);
-    CameraComponent(float aspect, float fov_degrees)
-        : m_aspect{aspect}, m_fov_degrees{fov_degrees}, m_projection_mat{1.0}, m_coordsys{}
+    DEFINE_COMPONENT_ID(Camera);
+    Camera(float aspect, float fov_degrees)
+        : m_aspect{aspect}, m_fov_degrees{fov_degrees}, m_projection_mat{1.0}, m_coordsys{}, m_sensitivity(1)
     {
         m_projection_mat = glm::perspective(glm::radians(m_fov_degrees), m_aspect, 0.1f, 200.0f);
         update_projection_matrix();
@@ -33,13 +33,25 @@ class CameraComponent : public Component
     {
         return m_projection_mat;
     }
-    const CoordSysComponent& coordsys() const
+    const CoordSys& coordsys() const
     {
         return m_coordsys;
     }
-    CoordSysComponent& coordsys()
+    CoordSys& coordsys()
     {
         return m_coordsys;
+    }
+    void reset()
+    {
+        m_coordsys.position() = glm::vec3{0, 0, 0};
+    }
+    void set_sensitivity(float sensitivity)
+    {
+        m_sensitivity = sensitivity;
+    }
+    float sensitivity()
+    {
+        return m_sensitivity;
     }
 
   private:
@@ -53,6 +65,7 @@ class CameraComponent : public Component
     float m_aspect;
     float m_fov_degrees;
     glm::mat4x4 m_projection_mat;
-    CoordSysComponent m_coordsys;
+    CoordSys m_coordsys;
+    float m_sensitivity;
 };
-} // namespace rendersystem
+} // namespace components

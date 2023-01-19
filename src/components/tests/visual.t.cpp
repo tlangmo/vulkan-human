@@ -3,9 +3,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 
-using namespace rendersystem;
+using namespace components;
 
 TEST_CASE("from gltf")
 {
-    VisualComponent::from_gltf_file("/home/tlangmo/dev/vulkan-human/assets/torus.gltf");
+    Visual3d::from_gltf_file("/home/tlangmo/dev/vulkan-human/assets/torus.gltf");
 }

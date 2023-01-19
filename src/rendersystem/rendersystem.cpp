@@ -155,11 +155,11 @@ void RenderSystem::draw(Entity* entity, uint64_t elapsed_us, std::shared_ptr<Cam
     }
     auto& render_mesh = m_meshes[viz->hash()];
     MeshPushConstants constants;
-    coord->rotation() = glm::rotate(coord->rotation(), 2 * elapsed_sec, glm::vec3(1, 0, 1));
+    // coord->rotation() = glm::rotate(coord->rotation(), 2 * elapsed_sec, glm::vec3(1, 0, 1));
     glm::mat4 model_mat = coord->transform();
 
     // calculate final mesh matrix
-    glm::mat4 mvp_matrix = camera->projection_mat() * camera->coordsys().transform() * model_mat;
+    glm::mat4 mvp_matrix = camera->projection_mat() * glm::inverse(camera->coordsys().transform()) * model_mat;
     constants.mvp_matrix = mvp_matrix;
     // upload the matrix to the GPU via push constants
     vkCmdPushConstants(m_core.cmd_buf_main, m_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),

@@ -34,7 +34,7 @@ void InputSystem::on_key(int key, int scancode, int action, int mods)
 
 void InputSystem::on_mouse(glm::vec2 mouse_pos)
 {
-    std::cout << "mouse x: " << mouse_pos.x << ", y: " << mouse_pos.y << std::endl;
+    // std::cout << "mouse x: " << mouse_pos.x << ", y: " << mouse_pos.y << std::endl;
 }
 
 void InputSystem::process(const std::vector<components::Entity>& entities, uint64_t elapsed_us)
@@ -47,11 +47,11 @@ void InputSystem::process(const std::vector<components::Entity>& entities, uint6
             float speed = cam->sensitivity();
             if (m_active_keys.find(GLFW_KEY_W) != m_active_keys.end())
             {
-                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{0, 0, 1.0f};
+                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{0, 0, -1.0f};
             }
             if (m_active_keys.find(GLFW_KEY_S) != m_active_keys.end())
             {
-                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{0, 0, -1.0f};
+                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{0, 0, 1.0f};
             }
             if (m_active_keys.find(GLFW_KEY_A) != m_active_keys.end())
             {

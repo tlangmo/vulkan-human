@@ -16,7 +16,6 @@ class Camera : public Component
     Camera(float aspect, float fov_degrees)
         : m_aspect{aspect}, m_fov_degrees{fov_degrees}, m_projection_mat{1.0}, m_coordsys{}, m_sensitivity(1)
     {
-        m_projection_mat = glm::perspective(glm::radians(m_fov_degrees), m_aspect, 0.1f, 200.0f);
         update_projection_matrix();
     };
     void set_aspect_ratio(float aspect)

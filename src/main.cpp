@@ -35,7 +35,7 @@ Entity create_camera(float aspect)
 {
     Entity e;
     auto cam = std::make_shared<Camera>(aspect, 70.0f);
-    cam->coordsys().position() = glm::vec3(0, 0, -2);
+    cam->coordsys().position() = glm::vec3(0, 0, 2);
     e.add_component(cam);
     return e;
 }

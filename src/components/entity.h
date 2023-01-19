@@ -4,7 +4,8 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-namespace rendersystem
+
+namespace components
 {
 class Component
 {
@@ -49,4 +50,4 @@ class Entity
   private:
     std::unordered_map<uint32_t, std::shared_ptr<Component>> m_components;
 };
-} // namespace rendersystem
+} // namespace components

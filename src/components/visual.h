@@ -5,7 +5,8 @@
 #include "tiny_gltf.h"
 #include <string>
 #include <vector>
-namespace rendersystem
+
+namespace components
 {
 
 struct StandardVertex
@@ -19,11 +20,11 @@ struct StandardVertex
 /**A simple 3D mesh
  *
  */
-class VisualComponent : public Component
+class Visual3d : public Component
 {
   public:
-    DEFINE_COMPONENT_ID(VisualComponent);
-    VisualComponent()
+    DEFINE_COMPONENT_ID(Visual3d);
+    Visual3d()
     {
     }
     const std::vector<StandardVertex>& vertices() const
@@ -43,8 +44,8 @@ class VisualComponent : public Component
         return m_indices;
     };
 
-    static std::shared_ptr<VisualComponent> make_triangle();
-    static std::shared_ptr<VisualComponent> from_gltf_file(const std::string& fn);
+    static std::shared_ptr<Visual3d> make_triangle();
+    static std::shared_ptr<Visual3d> from_gltf_file(const std::string& fn);
 
   private:
     std::vector<StandardVertex> m_vertices;
@@ -83,4 +84,4 @@ void iterate_accessor(const tinygltf::Accessor& acc, const tinygltf::Model& mode
     }
 }
 
-} // namespace rendersystem
+} // namespace components

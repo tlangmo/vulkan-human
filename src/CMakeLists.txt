@@ -1,4 +1,4 @@
-include_directories(${CURRENT_SOURCE_DIR} rendersystem components)
+include_directories(${CURRENT_SOURCE_DIR} rendersystem components inputsystem)
 
 find_package(SDL2 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -7,6 +7,7 @@ find_package(glfw3 CONFIG REQUIRED)
 
 add_subdirectory(components)   
 add_subdirectory(rendersystem)
+add_subdirectory(inputsystem)
 
 
 
@@ -22,4 +23,5 @@ target_link_libraries(main
     glfw
     $<TARGET_OBJECTS:rendersystem>
     $<TARGET_OBJECTS:components>
+    $<TARGET_OBJECTS:inputsystem>
 )

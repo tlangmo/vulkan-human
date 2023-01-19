@@ -6,12 +6,12 @@
 #include "tiny_gltf.h"
 #include <iostream>
 
-namespace rendersystem
+namespace components
 {
 
-std::shared_ptr<VisualComponent> VisualComponent::make_triangle()
+std::shared_ptr<Visual3d> Visual3d::make_triangle()
 {
-    auto comp = std::make_shared<VisualComponent>();
+    auto comp = std::make_shared<Visual3d>();
     std::vector<StandardVertex>& vertices = comp->vertices();
     vertices.resize(3);
     vertices[0].position = {1.f, 1.f, 0.0f};
@@ -29,7 +29,7 @@ std::shared_ptr<VisualComponent> VisualComponent::make_triangle()
     return comp;
 }
 
-std::shared_ptr<VisualComponent> VisualComponent::from_gltf_file(const std::string& fn)
+std::shared_ptr<Visual3d> Visual3d::from_gltf_file(const std::string& fn)
 {
     tinygltf::TinyGLTF loader;
     std::string err;
@@ -45,7 +45,7 @@ std::shared_ptr<VisualComponent> VisualComponent::from_gltf_file(const std::stri
         throw std::runtime_error("gltf file contains more than one mesh! unsupported.");
     }
 
-    auto comp = std::make_shared<VisualComponent>();
+    auto comp = std::make_shared<Visual3d>();
     std::vector<StandardVertex>& vertices = comp->vertices();
 
     // // extract the indicies for the first model;
@@ -105,4 +105,4 @@ std::shared_ptr<VisualComponent> VisualComponent::from_gltf_file(const std::stri
     return comp;
 }
 
-} // namespace rendersystem
+} // namespace components

@@ -46,11 +46,11 @@ class RenderSystem
     RenderSystem();
     GLFWwindow* create(uint32_t width, uint32_t height);
     void destroy();
-    void process(const std::vector<Entity>& entities, uint64_t elapsed_us);
+    void process(const std::vector<components::Entity>& entities, uint64_t elapsed_us);
 
   private:
     void create_pipeline();
-    void draw(Entity* entity, uint64_t elapsed_us, std::shared_ptr<CameraComponent> camera);
+    void draw(components::Entity* entity, uint64_t elapsed_us, std::shared_ptr<components::Camera> camera);
     uint32_t begin_pass(VkClearColorValue clear_color);
     void present_pass(uint32_t swap_chain_index);
 

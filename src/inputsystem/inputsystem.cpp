@@ -35,6 +35,7 @@ void InputSystem::on_key(int key, int scancode, int action, int mods)
 void InputSystem::on_mouse(glm::vec2 mouse_pos)
 {
     // std::cout << "mouse x: " << mouse_pos.x << ", y: " << mouse_pos.y << std::endl;
+    m_cur_mouse_pos = mouse_pos;
 }
 
 void InputSystem::process(const std::vector<components::Entity>& entities, uint64_t elapsed_us)
@@ -47,34 +48,41 @@ void InputSystem::process(const std::vector<components::Entity>& entities, uint6
             float speed = cam->sensitivity();
             if (m_active_keys.find(GLFW_KEY_W) != m_active_keys.end())
             {
-                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{0, 0, -1.0f};
+                cam->position() += speed * (float)elapsed_sec * cam->forward();
             }
             if (m_active_keys.find(GLFW_KEY_S) != m_active_keys.end())
             {
-                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{0, 0, 1.0f};
+                cam->position() += speed * (float)elapsed_sec * -cam->forward();
             }
             if (m_active_keys.find(GLFW_KEY_A) != m_active_keys.end())
             {
-                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{-1, 0, 0.0f};
+                cam->position() += speed * (float)elapsed_sec * cam->right();
             }
             if (m_active_keys.find(GLFW_KEY_D) != m_active_keys.end())
             {
-                cam->coordsys().position() += speed * (float)elapsed_sec * glm::vec3{1, 0, 0.0f};
+                cam->position() += speed * (float)elapsed_sec * -cam->right();
             }
             if (m_active_keys.find(GLFW_KEY_R) != m_active_keys.end())
             {
                 cam->reset();
             }
+            if (m_prev_mouse_pos != glm::vec2{0})
+            {
+                glm::vec2 delta_mouse = m_prev_mouse_pos - m_cur_mouse_pos;
+                cam->rotate(delta_mouse.x / m_width, delta_mouse.y / m_height);
+            }
+            m_prev_mouse_pos = m_cur_mouse_pos;
         }
     }
 }
 
-InputSystem::InputSystem(GLFWwindow* app_window) : m_app_window(app_window)
+InputSystem::InputSystem(GLFWwindow* app_window) : m_app_window(app_window), m_prev_mouse_pos{0}, m_cur_mouse_pos{0}
 {
     instance = this;
     glfwSetKeyCallback(app_window, static_on_key);
     glfwSetCursorPosCallback(app_window, static_on_mouse);
-    glfwSetInputMode(app_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(app_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwGetWindowSize(app_window, &m_width, &m_height);
 }
 
 } // namespace inputsystem

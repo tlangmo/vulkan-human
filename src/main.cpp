@@ -34,8 +34,9 @@ Entity create_torus()
 Entity create_camera(float aspect)
 {
     Entity e;
-    auto cam = std::make_shared<Camera>(aspect, 70.0f);
-    cam->coordsys().position() = glm::vec3(0, 0, 2);
+    auto cam = std::make_shared<Camera>(aspect, 60.0f);
+    cam->position() = glm::vec3(0, 1, -2);
+    cam->rotate(0, glm::radians(-30.0f));
     e.add_component(cam);
     return e;
 }
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
     auto e0 = create_triangle();
     auto e1 = create_torus();
     auto cam = create_camera(4 / 3.0f);
-    e0.get_component<CoordSys>()->position() = glm::vec3(1, 0, 0);
+    e0.get_component<CoordSys>()->position() = glm::vec3(0, 0, 0);
     std::vector<Entity> entities = {e0, e1, cam};
 
     RenderSystem rs;

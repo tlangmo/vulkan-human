@@ -17,7 +17,10 @@ class InputSystem
   private:
     GLFWwindow* m_app_window;
     std::unordered_map<int, bool> m_active_keys;
-    glm::vec2 m_last_mouse_pos;
+    glm::vec2 m_prev_mouse_pos;
+    glm::vec2 m_cur_mouse_pos;
+    int m_width;
+    int m_height;
 };
 
 } // namespace inputsystem
